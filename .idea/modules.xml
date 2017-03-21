@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/NoGoService.iml" filepath="$PROJECT_DIR$/.idea/modules/NoGoService.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/NoGoService_main.iml" filepath="$PROJECT_DIR$/.idea/modules/NoGoService_main.iml" group="NoGoService" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/NoGoService_test.iml" filepath="$PROJECT_DIR$/.idea/modules/NoGoService_test.iml" group="NoGoService" />
+    </modules>
+  </component>
+</project>

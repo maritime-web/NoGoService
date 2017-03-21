@@ -1,0 +1,132 @@
+version System.getProperty("version", "developer")
+apply plugin: 'java'
+apply plugin: 'findbugs'
+apply plugin: 'spring-boot'
+apply plugin: 'maven-publish'
+
+project.ext.jsr305 = "3.0.0"
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.1.RELEASE")
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    compile 'com.vividsolutions:jts:1.13'
+
+
+
+    compile 'mysql:mysql-connector-java:5.1.40'
+    compile 'com.google.guava:guava:19.0'
+    compile 'org.projectlombok:lombok:1.16.14'
+
+    compileOnly "com.google.code.findbugs:jsr305:$jsr305"
+    compileOnly "com.google.code.findbugs:annotations:$jsr305"
+
+    testCompile 'org.mockito:mockito-all:1.9.5'
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+}
+
+configurations.all({
+    resolutionStrategy {
+        failOnVersionConflict()
+
+        force(
+        )
+    }
+})
+
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+
+        sources(MavenPublication) {
+            from components.java
+
+            //noinspection GroovyAssignabilityCheck
+            artifact sourcesJar {
+                classifier "sources"
+            }
+        }
+        //noinspection GroovyAssignabilityCheck
+        javadoc(MavenPublication) {
+            from components.java
+
+            //noinspection GroovyAssignabilityCheck
+            artifact javadocJar {
+                classifier "javadoc"
+            }
+        }
+    }
+    repositories {
+        maven {
+            url 'http://repository-dma.forge.cloudbees.com/release/'
+            credentials {
+                username mavenUser
+                password mavenPassword
+            }
+        }
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    //noinspection GrUnresolvedAccess
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false //todo find a way to run with XML on Jenkins and html for developers
+        html.enabled = true
+    }
+}
+
+tasks.withType(Test) {
+    //testLogging.showStandardStreams = true
+    // forward running.from.bamboo
+    systemProperty 'running.from.bamboo', System.getProperty("running.from.bamboo", "false")
+    // On Bamboo we want to run all the tests in all modules to get all failures at once.
+    // Bamboo will detect if any tests fails and fail the build if needed.
+    // This way we can also use the Bamboo quarantine feature.
+    ignoreFailures System.getProperty("running.from.bamboo", "false").toBoolean()
+    afterTest { desc, result ->
+        println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
+    }
+}
+
+task deleteUnusedBranches(type: Exec) {
+    commandLine 'bash', '-c', 'git branch --merged master| grep -v "\\*" | grep -v master | xargs -n 1 git branch -d'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.0'
+}
+
