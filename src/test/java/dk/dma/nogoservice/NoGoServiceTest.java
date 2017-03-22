@@ -16,11 +16,7 @@ package dk.dma.nogoservice;
 
 import com.google.common.collect.Lists;
 import dk.dma.Asserts;
-import dk.dma.nogoservice.controller.ApiController;
-import dk.dma.nogoservice.dto.NoGoPolygon;
-import dk.dma.nogoservice.dto.NoGoRequest;
-import dk.dma.nogoservice.dto.NoGoResponse;
-import dk.dma.nogoservice.dto.GeoCoordinate;
+import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.service.TestNoGoService;
 import lombok.SneakyThrows;
 import org.junit.Test;
@@ -28,12 +24,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.embedded.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
+import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.web.client.HttpClientErrorException;
@@ -44,23 +35,21 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
+ * Tests validation and response format. Test on real data has to be made in integration tests.
+ *
  * @author Klaus Groenbaek
  *         Created 12/03/17.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles(ApiProfiles.TEST)
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Component
 public class NoGoServiceTest {
 
-    @Autowired
-    private ApiController controller;
 
     @Autowired
-    private TestNoGoService depthService;
+    private TestNoGoService testService;
 
     @LocalServerPort
     private int port;
@@ -71,7 +60,7 @@ public class NoGoServiceTest {
 
         NoGoRequest request = new NoGoRequest().setNorthWest(new GeoCoordinate(12.645173535741588, 55.64053813461296))
                 .setSouthEast(new GeoCoordinate(12.704356943619615, 55.61035686376758));
-        request.setDrought(3d);
+        request.setDraught(3d);
         NoGoResponse response = new NoGoResponse();
         ArrayList<NoGoPolygon> polygons = new ArrayList<>();
         ArrayList<GeoCoordinate> points = new ArrayList<>();
@@ -85,21 +74,48 @@ public class NoGoServiceTest {
         polygons.add(new NoGoPolygon().setPoints(points));
         response.setPolygons(polygons);
 
-        NoGoResponse noGoResponse = makeDepthRequest(request, response);
+        NoGoResponse noGoResponse = makeDepthRequest(request, response, "/area", NoGoResponse.class);
 
-        assertEquals("depthResponse", response, noGoResponse);
+        assertEquals("response", response, noGoResponse);
     }
 
-    private NoGoResponse makeDepthRequest(NoGoRequest request, NoGoResponse response) {
-        depthService.addRequestResponseMapping(request, response);
+    @Test
+    public void staticRequest2() throws Exception {
+
+
+        NoGoRequest request = new NoGoRequest().setNorthWest(new GeoCoordinate(12.645173535741588, 55.64053813461296))
+                .setSouthEast(new GeoCoordinate(12.704356943619615, 55.61035686376758));
+        request.setDraught(3d);
+        NoGoResponse response = new NoGoResponse();
+        ArrayList<NoGoPolygon> polygons = new ArrayList<>();
+        ArrayList<GeoCoordinate> points = new ArrayList<>();
+
+        points.add(new GeoCoordinate( 9.419409,54.36294));
+        points.add(new GeoCoordinate(13.149009,54.36294));
+        points.add(new GeoCoordinate(13.149009,56.36316));
+        points.add(new GeoCoordinate( 9.419409,56.36316));
+        points.add(new GeoCoordinate( 9.419409,54.36294));
+
+        polygons.add(new NoGoPolygon().setPoints(points));
+        response.setPolygons(polygons);
+
+        MultiPolygon noGoResponse = makeDepthRequest(request, response, "/area/wkt", MultiPolygon.class);
+
+        assertEquals("wkt result",
+                "MULTIPOLYGON (((9.419409 54.36294, 13.149009 54.36294, 13.149009 56.36316, 9.419409 56.36316, 9.419409 54.36294)))", noGoResponse.getWkt());
+    }
+
+
+    private <T> T makeDepthRequest(NoGoRequest request, NoGoResponse response, String path, Class<T> responseClass) {
+        testService.addRequestResponseMapping(request, response);
 
         RestTemplate template = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(Lists.newArrayList(MediaType.APPLICATION_JSON));
 
-        RequestEntity<NoGoRequest> requestEntity = new RequestEntity<>(request, headers, HttpMethod.POST, getURI("/depthinfo"));
-        ResponseEntity<NoGoResponse> responseEntity = template.exchange(requestEntity, NoGoResponse.class);
+        RequestEntity<NoGoRequest> requestEntity = new RequestEntity<>(request, headers, HttpMethod.POST, getURI(path));
+        ResponseEntity<T> responseEntity = template.exchange(requestEntity, responseClass);
         return responseEntity.getBody();
     }
 
@@ -108,7 +124,7 @@ public class NoGoServiceTest {
 
         try {
             NoGoRequest request = new NoGoRequest().setNorthWest(new GeoCoordinate(12.645173535741588, 55.64053813461296));
-            makeDepthRequest(request, null);
+            makeDepthRequest(request, null, "/area", NoGoResponse.class);
         } catch (HttpClientErrorException e) {
             Asserts.assertContains(e.getResponseBodyAsString(), "southEast");
         }
@@ -121,7 +137,7 @@ public class NoGoServiceTest {
         try {
             NoGoRequest request = new NoGoRequest().setNorthWest(new GeoCoordinate(12.645173535741588, 55.64053813461296))
                     .setSouthEast(new GeoCoordinate().setLon(12.704356943619615));
-            makeDepthRequest(request, null);
+            makeDepthRequest(request, null, "/area", NoGoResponse.class);
         } catch (HttpClientErrorException e) {
             Asserts.assertContains(e.getResponseBodyAsString(), "southEast.lat");
             Asserts.assertContains(e.getResponseBodyAsString(), "may not be null");

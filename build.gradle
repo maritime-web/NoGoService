@@ -37,8 +37,9 @@ dependencies {
     compileOnly "com.google.code.findbugs:jsr305:$jsr305"
     compileOnly "com.google.code.findbugs:annotations:$jsr305"
 
-    testCompile 'org.mockito:mockito-all:1.9.5'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
+    testCompile 'com.h2database:h2:1.4.191'
+
 }
 
 configurations.all({

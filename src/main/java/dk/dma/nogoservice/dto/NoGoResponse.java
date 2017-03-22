@@ -15,6 +15,7 @@
 package dk.dma.nogoservice.dto;
 
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.util.List;
 
@@ -23,6 +24,7 @@ import java.util.List;
  *         Created 12/03/17.
  */
 @Data
+@Accessors(chain = true)
 public class NoGoResponse {
     private List<NoGoPolygon> polygons;
 }

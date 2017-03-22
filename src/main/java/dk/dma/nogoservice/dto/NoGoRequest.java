@@ -5,10 +5,7 @@ import lombok.experimental.Accessors;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.*;
 
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -25,13 +22,12 @@ public class NoGoRequest {
 	private GeoCoordinate southEast;
     @NotNull
     @Valid
-    private Double drought;
+    private Double draught;
 
-    public String toWkt() {
-        return "POLYGON((" + northWest.toWktCoordinate() + ", " + southEast.getLon() + " " + northWest.getLat() + ", " +
-                southEast.toWktCoordinate() + ", " + northWest.getLon() + " " + southEast.getLat() + ", " + northWest.toWktCoordinate() + "))";
+    public String toWKT() {
+        return "POLYGON((" + northWest.toWKT() + ", " + southEast.getLon() + " " + northWest.getLat() + ", " +
+                southEast.toWKT() + ", " + northWest.getLon() + " " + southEast.getLat() + ", " + northWest.toWKT() + "))";
     }
-
 
 
     /**
@@ -43,6 +39,7 @@ public class NoGoRequest {
     public NoGoRequest plusPadding(double lonPadding, double latPadding) {
         return new NoGoRequest()
                 .setNorthWest(new GeoCoordinate(northWest.getLon() + lonPadding, northWest.getLat() + latPadding))
-                .setSouthEast(new GeoCoordinate(southEast.getLon() + lonPadding, southEast.getLat() + latPadding));
+                .setSouthEast(new GeoCoordinate(southEast.getLon() + lonPadding, southEast.getLat() + latPadding))
+                .setDraught(draught);
     }
 }

@@ -1,0 +1,6 @@
+spring:
+    datasource:
+        url: jdbc:mysql://localhost:3306/enavshore
+        username: enavshore
+        password: enavshore
+        driver-class-name: com.mysql.jdbc.Driver

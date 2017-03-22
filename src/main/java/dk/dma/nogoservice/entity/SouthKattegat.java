@@ -29,14 +29,9 @@
  */
 package dk.dma.nogoservice.entity;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 /**
  * The data is dived into lon, lat (m, n) squares identifying a depth point.
@@ -74,24 +69,5 @@ public class SouthKattegat {
                 "n=" + n +
                 ", m=" + m +
                 '}';
-    }
-
-    public Integer depthAsInt() {
-        return depthAsInt(depth);
-    }
-
-    private Integer depthAsInt(Double depth) {
-        if (depth == null) {
-            return null;
-        }
-        return this.depth.intValue();
-    }
-
-    public boolean hasDepth(Integer depth) {
-        if (this.depth == null) {
-            return depth == null;
-        } else {
-            return depthAsInt(this.depth).equals(depth);
-        }
     }
 }

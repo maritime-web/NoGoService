@@ -25,7 +25,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import javax.validation.Valid;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,14 +47,14 @@ public class DefaultNoGoService implements NoGoService {
 
     @Override
     @SneakyThrows(ParseException.class)
-    public NoGoResponse getDepthInformation(@Valid NoGoRequest request) {
+    public NoGoResponse getNoGoAreas(@Valid NoGoRequest request) {
 
-        String wkt = request.toWkt();
+        String wkt = request.toWKT();
         WKTReader reader = new WKTReader();
         Geometry area = reader.read(wkt);
         for (QueryArea queryArea : queryAreas) {
             if (queryArea.matches(area)) {
-                return queryArea.getDepth(request);
+                return queryArea.getNogoAreas(request);
             }
         }
 

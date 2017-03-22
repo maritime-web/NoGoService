@@ -14,15 +14,13 @@
  */
 package dk.dma.nogoservice.controller;
 
-import dk.dma.nogoservice.dto.NoGoRequest;
-import dk.dma.nogoservice.dto.NoGoResponse;
+import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.service.NoGoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.stream.Collectors;
 
 /**
  * @author Klaus Groenbaek
@@ -38,9 +36,16 @@ public class ApiController {
         this.noGoService = noGoService;
     }
 
-    @PostMapping(value = "/depthinfo")
-    public NoGoResponse getDepthInformation(@Valid @RequestBody NoGoRequest request) {
-        return noGoService.getDepthInformation(request);
+    @PostMapping(value = "/area")
+    public NoGoResponse getNoGoAreas(@Valid @RequestBody NoGoRequest request) {
+        return noGoService.getNoGoAreas(request);
+    }
+
+    @PostMapping(value = "/area/wkt")
+    public MultiPolygon getNoGoAreasAsWKT(@Valid @RequestBody NoGoRequest request) {
+        NoGoResponse nogo = noGoService.getNoGoAreas(request);
+        String wkt = "MULTIPOLYGON (" + nogo.getPolygons().stream().map(p->p.toWKT().replace("POLYGON ", "")).collect(Collectors.joining(",")) + ")";
+        return new MultiPolygon().setWkt(wkt);
     }
 
 

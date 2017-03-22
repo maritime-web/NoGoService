@@ -26,5 +26,5 @@ public interface QueryArea {
 
     String getName();
     boolean matches(Geometry area);
-    NoGoResponse getDepth(NoGoRequest request);
+    NoGoResponse getNogoAreas(NoGoRequest request);
 }

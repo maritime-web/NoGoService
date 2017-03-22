@@ -16,8 +16,6 @@ package dk.dma.nogoservice;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * @author Klaus Groenbaek
@@ -27,6 +25,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class Application {
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder(Application.class).run(args);
+        new SpringApplicationBuilder(Application.class).profiles(ApiProfiles.PRODUCTION).run(args);
     }
 }

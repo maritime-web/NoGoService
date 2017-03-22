@@ -12,24 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.dto;
-
-import lombok.Data;
-import lombok.experimental.Accessors;
-
-import java.util.List;
-import java.util.stream.Collectors;
+package dk.dma.nogoservice.algo;
 
 /**
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 22/03/17.
  */
-@Data
-@Accessors(chain = true)
-public class NoGoPolygon {
-    private List<GeoCoordinate> points;
+public interface PolygonOptimizer {
 
-    public String toWKT() {
-        return "POLYGON ((" + getPoints().stream().map(GeoCoordinate::toWKT).collect(Collectors.joining(", ")) + "))";
-    }
+    Polygon optimize(Polygon polygon);
 }

@@ -24,5 +24,5 @@ import javax.validation.Valid;
  *         Created 12/03/17.
  */
 public interface NoGoService {
-    NoGoResponse getDepthInformation(@Valid NoGoRequest request);
+    NoGoResponse getNoGoAreas(@Valid NoGoRequest request);
 }

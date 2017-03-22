@@ -35,7 +35,7 @@ public class TestNoGoService implements NoGoService {
     public Map<NoGoRequest, NoGoResponse> mapping = new HashMap<>();
 
     @Override
-    public NoGoResponse getDepthInformation(@Valid NoGoRequest request) {
+    public NoGoResponse getNoGoAreas(@Valid NoGoRequest request) {
         NoGoResponse response = mapping.get(request);
         if (response == null) {
             throw new IllegalStateException("No mapping for request " + request);

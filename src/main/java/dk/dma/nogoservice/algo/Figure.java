@@ -12,24 +12,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.dto;
+package dk.dma.nogoservice.algo;
 
-import lombok.Data;
-import lombok.experimental.Accessors;
+import com.google.common.collect.Lists;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
+ * A figure is a list of points.
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 15/03/17.
  */
-@Data
-@Accessors(chain = true)
-public class NoGoPolygon {
-    private List<GeoCoordinate> points;
+@AllArgsConstructor
+@EqualsAndHashCode
+public abstract class Figure {
+    private final List<Point> points;
 
-    public String toWKT() {
-        return "POLYGON ((" + getPoints().stream().map(GeoCoordinate::toWKT).collect(Collectors.joining(", ")) + "))";
+    Figure(Point... points) {
+        this(Lists.newArrayList(points));
     }
+
+    @Override
+    public String toString() {
+        throw new IllegalStateException("Sub classes must override to string, for debugging purposes.");
+    }
+
+    public List<Point> getPoints() {
+        return points;
+    }
+
 }

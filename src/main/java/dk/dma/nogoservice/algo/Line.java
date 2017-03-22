@@ -12,24 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.dto;
+package dk.dma.nogoservice.algo;
 
-import lombok.Data;
-import lombok.experimental.Accessors;
+import com.google.common.collect.Lists;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * Lines are always horizontal or vertical ( can go in both directions), but never diagonal
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 15/03/17.
  */
-@Data
-@Accessors(chain = true)
-public class NoGoPolygon {
-    private List<GeoCoordinate> points;
+@EqualsAndHashCode(callSuper = true)
+public class Line extends Figure {
 
-    public String toWKT() {
-        return "POLYGON ((" + getPoints().stream().map(GeoCoordinate::toWKT).collect(Collectors.joining(", ")) + "))";
+    Line(List<Point> points) {
+        super(points);
+    }
+
+    Line(Point start, Point end) {
+        this(Lists.newArrayList(start, end));
+    }
+
+    @Override
+    public String toString() {
+        return "Line " + getPoints().stream().map(Object::toString).collect(Collectors.joining(","));
     }
 }

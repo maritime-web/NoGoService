@@ -17,19 +17,13 @@ package dk.dma.nogoservice.dto;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 22/03/17.
  */
 @Data
 @Accessors(chain = true)
-public class NoGoPolygon {
-    private List<GeoCoordinate> points;
+public class MultiPolygon {
+    String wkt;
 
-    public String toWKT() {
-        return "POLYGON ((" + getPoints().stream().map(GeoCoordinate::toWKT).collect(Collectors.joining(", ")) + "))";
-    }
 }

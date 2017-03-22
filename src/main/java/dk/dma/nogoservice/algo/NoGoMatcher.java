@@ -12,24 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.dto;
-
-import lombok.Data;
-import lombok.experimental.Accessors;
-
-import java.util.List;
-import java.util.stream.Collectors;
+package dk.dma.nogoservice.algo;
 
 /**
+ * A matching criteria for the GroupingAlgorithm, so the matching logic can be replaced dynamically
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 20/03/17.
  */
-@Data
-@Accessors(chain = true)
-public class NoGoPolygon {
-    private List<GeoCoordinate> points;
+@FunctionalInterface
+public interface NoGoMatcher<Value> {
 
-    public String toWKT() {
-        return "POLYGON ((" + getPoints().stream().map(GeoCoordinate::toWKT).collect(Collectors.joining(", ")) + "))";
-    }
+     boolean matches(Value value);
 }

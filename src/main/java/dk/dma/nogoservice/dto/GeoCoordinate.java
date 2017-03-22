@@ -14,9 +14,7 @@
  */
 package dk.dma.nogoservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.validation.constraints.NotNull;
@@ -35,7 +33,11 @@ public class GeoCoordinate {
     @NotNull
     private Double lat;
 
-    public String toWktCoordinate() {
+    String toWKT() {
         return lon + " " + lat;
+    }
+
+    public GeoCoordinate adjusted(double deltaLon, double deltaLat) {
+        return new GeoCoordinate(lon+deltaLon, lat+deltaLat);
     }
 }

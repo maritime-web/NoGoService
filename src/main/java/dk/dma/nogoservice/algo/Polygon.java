@@ -12,24 +12,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.dto;
+package dk.dma.nogoservice.algo;
 
-import lombok.Data;
-import lombok.experimental.Accessors;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 15/03/17.
  */
-@Data
-@Accessors(chain = true)
-public class NoGoPolygon {
-    private List<GeoCoordinate> points;
+@EqualsAndHashCode(callSuper = true)
+public class Polygon extends Figure {
 
-    public String toWKT() {
-        return "POLYGON ((" + getPoints().stream().map(GeoCoordinate::toWKT).collect(Collectors.joining(", ")) + "))";
+
+    Polygon(List<Point> points) {
+        super(points);
     }
+
+
+    @Override
+    public String toString() {
+        return "Polygon " + getPoints().stream().map(Object::toString).collect(Collectors.joining(","));
+    }
+
 }
