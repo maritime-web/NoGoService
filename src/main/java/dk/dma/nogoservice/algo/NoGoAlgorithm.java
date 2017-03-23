@@ -14,11 +14,9 @@
  */
 package dk.dma.nogoservice.algo;
 
-import com.google.common.base.Stopwatch;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -38,9 +36,10 @@ public class NoGoAlgorithm<Value> {
 
     /**
      * A list of Rows containing a list of columns. This means that the inner list has a constant m (y) value
+     *
      * @param rowsOfColumns a grid of data
-     * @param matcher a matching algorithm
-     * @param optimizer a polygon optimizer
+     * @param matcher       a matching algorithm
+     * @param optimizer     a polygon optimizer
      */
     public NoGoAlgorithm(List<List<Value>> rowsOfColumns, NoGoMatcher<Value> matcher, PolygonOptimizer optimizer) {
         this.rowsOfColumns = rowsOfColumns;
@@ -60,49 +59,44 @@ public class NoGoAlgorithm<Value> {
      * @return a list of figures that identifies the coordinates which matched
      */
     public List<Figure> getFigures() {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        try {
-            List<List<LineSegment>> rows = new ArrayList<>();
-            for (int y = 0; y < rowsOfColumns.size(); y++) {
-                List<Value> columns = rowsOfColumns.get(y);
-                Boolean previousValue = null;
-                LineSegment builder = new LineSegment();
-                List<LineSegment> linesInRow = new ArrayList<>();
-                for (int x = 0; x < columns.size(); x++) {
-                    Value value = columns.get(x);
-                    boolean noGo = matcher.matches(value);
-                    if (previousValue == null) {
-                        previousValue = noGo;
-                        if (noGo) {
+
+        List<List<LineSegment>> rows = new ArrayList<>();
+        for (int y = 0; y < rowsOfColumns.size(); y++) {
+            List<Value> columns = rowsOfColumns.get(y);
+            Boolean previousValue = null;
+            LineSegment builder = new LineSegment();
+            List<LineSegment> linesInRow = new ArrayList<>();
+            for (int x = 0; x < columns.size(); x++) {
+                Value value = columns.get(x);
+                boolean noGo = matcher.matches(value);
+                if (previousValue == null) {
+                    previousValue = noGo;
+                    if (noGo) {
+                        builder.start = new Point(x, y);
+                    }
+                } else {
+                    if (previousValue != noGo) {
+                        // value has changed
+
+                        if (!noGo) {
+                            builder.end = new Point(x - 1, y);
+                            linesInRow.add(builder);
+                            builder = new LineSegment();
+                        } else {
                             builder.start = new Point(x, y);
                         }
-                    } else {
-                        if (previousValue != noGo) {
-                            // value has changed
-
-                            if (!noGo) {
-                                builder.end = new Point(x - 1, y);
-                                linesInRow.add(builder);
-                                builder = new LineSegment();
-                            } else {
-                                builder.start = new Point(x, y);
-                            }
-                            previousValue = noGo;
-                        }
+                        previousValue = noGo;
                     }
                 }
-                if (builder.start != null && builder.end == null) {
-                    builder.end = new Point(columns.size() - 1, y);
-                    linesInRow.add(builder);
-                }
-                rows.add(linesInRow);
             }
-
-            return joinLines(rows);
-        } finally {
-            long millis = stopwatch.stop().elapsed(TimeUnit.MILLISECONDS);
-            log.info("Processed " + rowsOfColumns. size() + "x" + rowsOfColumns.get(0).size() + " in " + millis + " ms");
+            if (builder.start != null && builder.end == null) {
+                builder.end = new Point(columns.size() - 1, y);
+                linesInRow.add(builder);
+            }
+            rows.add(linesInRow);
         }
+
+        return joinLines(rows);
     }
 
     /**
@@ -142,7 +136,7 @@ public class NoGoAlgorithm<Value> {
      * Keeps the state of a figure being build. It stores the last left and right position, and records when the left and right sides of the polygon moves
      * In the end the recorded points can be inspected and used to construct a figure
      */
-     class LineJoiner {
+    class LineJoiner {
         List<Point> leftPoints = new ArrayList<>();
         List<Point> rightPoints = new ArrayList<>();
         private Point lastLeft;

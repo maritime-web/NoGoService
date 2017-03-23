@@ -31,6 +31,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Query area for south Kattegat as defined by the area
@@ -45,9 +46,10 @@ public class SouthKattegatQueryArea implements QueryArea {
      * Since the DB contains specific points, we need to add a little padding to be sure to find the area which contains the
      * specified rectangle. This is half the distance between each measuring point
      */
-    public static final double latOffset = 0.00055504;
-    public static final double lonOffset = 0.00055504;
+    private static final double latOffset = 0.00055504;
+    private static final double lonOffset = 0.00055504;
 
+    private final AtomicInteger nextRequestId = new AtomicInteger(0);
     private final Geometry sydKattegat;
     private final FigureTransformer figureTransformer;
 
@@ -74,7 +76,9 @@ public class SouthKattegatQueryArea implements QueryArea {
 
     @Override
     public NoGoResponse getNogoAreas(NoGoRequest request) {
-        // need to enlarge the area, witht half the size between measuring points to be sure we don't overlook anything at the edges
+        int requestId = this.nextRequestId.incrementAndGet();
+        log.info("processing request {}, input ", requestId, request);
+        // need to enlarge the area, whit half the size between measuring points to be sure we don't overlook anything at the edges
         request = request.plusPadding(lonOffset, latOffset);
         Double draught = request.getDraught();
         Stopwatch boundaryTime = Stopwatch.createStarted();
@@ -88,7 +92,8 @@ public class SouthKattegatQueryArea implements QueryArea {
                 .setParameter("north", request.getNorthWest().getLat())
                 .getSingleResult();
 
-        log.info("boundary query for {} in {} ms", request, boundaryTime.stop().elapsed(TimeUnit.MILLISECONDS));
+
+        log.info("boundary query, request {} in {} ms", requestId, boundaryTime.stop().elapsed(TimeUnit.MILLISECONDS));
 
         Stopwatch dataQuery = Stopwatch.createStarted();
         // we order by m(lat), n(lon) because this can be mapped to y, x and we prefer to handle the data in rows
@@ -97,8 +102,8 @@ public class SouthKattegatQueryArea implements QueryArea {
                 .setParameter("minM", boundary.getMinM()).setParameter("maxM", boundary.getMaxM())
                 .getResultList();
 
+        log.info("data query, request {} in {} ms", requestId, dataQuery.stop().elapsed(TimeUnit.MILLISECONDS));
 
-        log.info("data query for {} in {} ms", request, dataQuery.stop().elapsed(TimeUnit.MILLISECONDS));
         // we can now turn the list into a grid, by splitting into rows of length maxN-minN
         List<List<SouthKattegat>> grid = Lists.partition(result, boundary.getColumnCount());
 
@@ -107,8 +112,11 @@ public class SouthKattegatQueryArea implements QueryArea {
             return southKattegat.getDepth() == null || southKattegat.getDepth() > -draught; // DB has altitude values so depth is negative
         }, new DefaultPolygonOptimizer());
 
+        Stopwatch nogoCalculation = Stopwatch.createStarted();
         List<Figure> figures = algo.getFigures();
         List<NoGoPolygon> polygons = figureTransformer.convertToGeoLocations(grid, figures);
+
+        log.info("Nogo grouping {}x{}, request  in {} ms", grid. size(), grid.get(0).size(), requestId,  nogoCalculation.stop().elapsed(TimeUnit.MILLISECONDS));
 
         return new NoGoResponse().setPolygons(polygons);
     }

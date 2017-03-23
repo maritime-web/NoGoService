@@ -1,9 +1,0 @@
-server.contextPath: /nogo
-
-# Do not expose /env, /dump and all other default endpoints, except for help
-endpoints:
-    enabled: false
-    health.enabled: true
-
-
-spring.jta.atomikos.datasource.test-query: select 1

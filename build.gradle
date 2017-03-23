@@ -1,8 +1,9 @@
-version System.getProperty("version", "developer")
+version ''
+
 apply plugin: 'java'
+apply plugin: 'war'
 apply plugin: 'findbugs'
 apply plugin: 'spring-boot'
-apply plugin: 'maven-publish'
 
 project.ext.jsr305 = "3.0.0"
 
@@ -18,7 +19,6 @@ buildscript {
 repositories {
     mavenCentral()
 }
-
 
 dependencies {
 
@@ -51,83 +51,33 @@ configurations.all({
     }
 })
 
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-
-        sources(MavenPublication) {
-            from components.java
-
-            //noinspection GroovyAssignabilityCheck
-            artifact sourcesJar {
-                classifier "sources"
-            }
-        }
-        //noinspection GroovyAssignabilityCheck
-        javadoc(MavenPublication) {
-            from components.java
-
-            //noinspection GroovyAssignabilityCheck
-            artifact javadocJar {
-                classifier "javadoc"
-            }
-        }
-    }
-    repositories {
-        maven {
-            url 'http://repository-dma.forge.cloudbees.com/release/'
-            credentials {
-                username mavenUser
-                password mavenPassword
-            }
+jar {
+    doFirst {
+        manifest {
+            attributes("build-version": "$System.env.BUILD_NUMBER")
         }
     }
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allJava
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    //noinspection GrUnresolvedAccess
-    from javadoc.destinationDir
-}
-
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-}
+def onJenkins = System.getenv().get('BUILD_NUMBER') != null
 
 tasks.withType(FindBugs) {
     reports {
-        xml.enabled = false //todo find a way to run with XML on Jenkins and html for developers
-        html.enabled = true
+        xml.enabled = onJenkins
+        html.enabled = !onJenkins
     }
+    ignoreFailures = onJenkins
 }
 
 tasks.withType(Test) {
-    //testLogging.showStandardStreams = true
-    // forward running.from.bamboo
-    systemProperty 'running.from.bamboo', System.getProperty("running.from.bamboo", "false")
-    // On Bamboo we want to run all the tests in all modules to get all failures at once.
-    // Bamboo will detect if any tests fails and fail the build if needed.
-    // This way we can also use the Bamboo quarantine feature.
-    ignoreFailures System.getProperty("running.from.bamboo", "false").toBoolean()
     afterTest { desc, result ->
         println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
     }
 }
 
-task deleteUnusedBranches(type: Exec) {
-    commandLine 'bash', '-c', 'git branch --merged master| grep -v "\\*" | grep -v master | xargs -n 1 git branch -d'
+// task that can be used to test out groovy expressions
+task debug {
+    outputs.upToDateWhen { false }
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.0'
-}
 

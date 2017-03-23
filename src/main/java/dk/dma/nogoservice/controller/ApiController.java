@@ -48,7 +48,4 @@ public class ApiController {
         return new MultiPolygon().setWkt(wkt);
     }
 
-
-
-
 }

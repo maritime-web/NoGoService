@@ -19,10 +19,13 @@ import dk.dma.nogoservice.algo.*;
 import dk.dma.nogoservice.dto.GeoCoordinate;
 import dk.dma.nogoservice.dto.NoGoPolygon;
 import dk.dma.nogoservice.entity.SouthKattegat;
+import dk.dma.nogoservice.util.MathUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
  *         Created 21/03/17.
  */
 @Component
+@Slf4j
 public class FigureTransformer {
     /**
      * The data is made up by distinct points, with a distance between. We therefore take half the distance between a Go and noGo point and add it as padding
@@ -89,6 +93,14 @@ public class FigureTransformer {
                 noGoPolygons.add(new NoGoPolygon().setPoints(Lists.newArrayList(downLeft, upLeft, upRight, downRight, downLeft)));
             }
         }
+
+        noGoPolygons.stream().map(p->p.getPoints()).flatMap(l->l.stream()).forEach(new Consumer<GeoCoordinate>() {
+            @Override
+            public void accept(GeoCoordinate coordinate) {
+                coordinate.setLon(MathUtil.round(coordinate.getLon(), 6));
+                coordinate.setLat(MathUtil.round(coordinate.getLat(), 6));
+            }
+        });
         return noGoPolygons;
     }
 }
