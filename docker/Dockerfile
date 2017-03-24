@@ -13,4 +13,4 @@ RUN chmod a+x *.sh
 
 EXPOSE 8080
 
- // application prints directly to stdout, so we can forward it to CloudWatch directly from the Container service
+# application prints directly to stdout, so we can forward it to CloudWatch directly from the Container service
