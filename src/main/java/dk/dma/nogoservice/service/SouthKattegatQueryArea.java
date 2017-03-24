@@ -104,19 +104,19 @@ public class SouthKattegatQueryArea implements QueryArea {
 
         log.info("data query, request {} in {} ms", requestId, dataQuery.stop().elapsed(TimeUnit.MILLISECONDS));
 
+        Stopwatch nogoCalculation = Stopwatch.createStarted();
         // we can now turn the list into a grid, by splitting into rows of length maxN-minN
         List<List<SouthKattegat>> grid = Lists.partition(result, boundary.getColumnCount());
-
 
         NoGoAlgorithm<SouthKattegat> algo = new NoGoAlgorithm<>(grid, southKattegat -> {
             return southKattegat.getDepth() == null || southKattegat.getDepth() > -draught; // DB has altitude values so depth is negative
         }, new DefaultPolygonOptimizer());
 
-        Stopwatch nogoCalculation = Stopwatch.createStarted();
+
         List<Figure> figures = algo.getFigures();
         List<NoGoPolygon> polygons = figureTransformer.convertToGeoLocations(grid, figures);
 
-        log.info("Nogo grouping {}x{}, request  in {} ms", grid. size(), grid.get(0).size(), requestId,  nogoCalculation.stop().elapsed(TimeUnit.MILLISECONDS));
+        log.info("Nogo grouping {}x{}, request {} in {} ms", grid. size(), grid.get(0).size(), requestId,  nogoCalculation.stop().elapsed(TimeUnit.MILLISECONDS));
 
         return new NoGoResponse().setPolygons(polygons);
     }
