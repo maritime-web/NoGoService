@@ -28,14 +28,14 @@ dependencies {
 
     compile 'com.vividsolutions:jts:1.13'
 
-
-
     compile 'mysql:mysql-connector-java:5.1.40'
     compile 'com.google.guava:guava:19.0'
     compile 'org.projectlombok:lombok:1.16.14'
 
     compileOnly "com.google.code.findbugs:jsr305:$jsr305"
     compileOnly "com.google.code.findbugs:annotations:$jsr305"
+
+    compile fileTree(dir: 'libs')
 
     testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile 'com.h2database:h2:1.4.191'

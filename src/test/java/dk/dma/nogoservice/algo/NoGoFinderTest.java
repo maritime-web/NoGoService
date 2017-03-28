@@ -16,6 +16,7 @@ package dk.dma.nogoservice.algo;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -28,7 +29,6 @@ import static org.junit.Assert.assertEquals;
  * @author Klaus Groenbaek
  *         Created 20/03/17.
  */
-@SuppressWarnings("Duplicates")
 @Slf4j
 public class NoGoFinderTest {
 
@@ -165,6 +165,90 @@ public class NoGoFinderTest {
         assertEquals("1", "Polygon (0,0),(0,2),(1,2),(2,1),(2,0),(0,0)", collect.get(0).toString());
     }
 
+    @Test
+    @Ignore("Current algo has problems with holes")
+    public void holeTop() {
+        String [][] twoDArray = {
+                {"1", " ", "1"},
+                {"1", "1", "1"},
+        };
+        List<Figure> collect = getConnectedAreas(twoDArray);
+        assertEquals("number of areas", 1, collect.size());
+
+        assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
+    }
+
+    @Test
+    @Ignore("Current algo has problems with holes")
+    public void holeTop2() {
+        String [][] twoDArray = {
+                {"1", "1", " ", "1", "1"},
+                {"1", "1", " ", "1", "1"},
+                {"1", "1", "1", "1", "1"},
+        };
+        List<Figure> collect = getConnectedAreas(twoDArray);
+        assertEquals("number of areas", 1, collect.size());
+
+        assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
+    }
+
+    @Test
+    @Ignore("Current algo has problems with holes")
+    public void holeBottom() {
+        String [][] twoDArray = {
+                {"1", "1", "1"},
+                {"1", " ", "1"},
+        };
+        List<Figure> collect = getConnectedAreas(twoDArray);
+        assertEquals("number of areas", 1, collect.size());
+
+        assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
+    }
+
+    @Test
+    @Ignore("Current algo has problems with holes")
+    public void holeBottom2() {
+        String [][] twoDArray = {
+                {"1", "1", "1", "1", "1"},
+                {"1", "1", " ", "1", "1"},
+                {"1", "1", " ", "1", "1"},
+        };
+        List<Figure> collect = getConnectedAreas(twoDArray);
+        assertEquals("number of areas", 1, collect.size());
+
+        assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
+    }
+
+
+
+    @Test
+    @Ignore("Current algo has problems with holes")
+    public void hole() {
+        String [][] twoDArray = {
+                {"1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"},
+                {"1", " ", "1", "1", "1", "1", "1", "1", "1", "1", "1"},
+                {"1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"}
+        };
+        List<Figure> collect = getConnectedAreas(twoDArray);
+        assertEquals("number of areas", 2, collect.size());
+        assertEquals("1", "Polygon (0,0),(0,2),(1,2),(2,1),(2,0),(0,0)", collect.get(0).toString());
+    }
+
+
+    @Test
+    @Ignore("Current algo has problems with holes")
+    public void sliths() {
+        String [][] twoDArray = {
+                {"1", "1", " ", "1", "1", " ","1", "1"},
+                {"1", "1", " ", "1", "1", " ","1", "1"},
+                {"1", "1", " ", "1", "1", " ","1", "1"},
+                {"1", "1", "1", "1", "1", "1","1", "1"}
+        };
+        List<Figure> collect = getConnectedAreas(twoDArray);
+        assertEquals("number of areas", 1, collect.size());
+        assertEquals("1", "Polygon (0,0),(0,2),(1,2),(2,1),(2,0),(0,0)", collect.get(0).toString());
+    }
+
 
 
     @Test
@@ -256,7 +340,7 @@ public class NoGoFinderTest {
     private List<Figure> getConnectedAreas(String[][] twoDArray) {
         List<List<String>> grid = Arrays.stream(twoDArray).map(Lists::newArrayList).collect(Collectors.toList());
         Collections.reverse(grid);
-        NoGoAlgorithm<String> algo = new NoGoAlgorithm<>(grid, s -> s.equals("1"), new DefaultPolygonOptimizer());
+        AreaGroupingAlgorithm<String> algo = new LineBasedAreaGroupingAlgorithm<>(grid, s -> s.equals("1"), new DefaultPolygonOptimizer());
         long start = System.nanoTime();
         List<Figure> collect = algo.getFigures();
         long delta = System.nanoTime() - start;

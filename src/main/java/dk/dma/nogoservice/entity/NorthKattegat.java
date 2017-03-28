@@ -37,7 +37,7 @@ import javax.persistence.*;
 @Getter
 @Setter
 @Table(name="depth_denmark100mNord")
-public class NorthKattegat {
+public class NorthKattegat implements GeoCoordinateProvider {
 
     @Id
     @Column(name = "id", unique = true, nullable = false, updatable = false)

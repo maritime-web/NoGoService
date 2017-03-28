@@ -24,11 +24,13 @@ import java.util.stream.Collectors;
  * The are processes the grid one line at a time, and if the current line connects with the previous line it extends the polygon area
  * The algorithm is general, but used to find NoGo areas
  *
+ * NOTE: This algorithm is not complete, it has problems with holes
+ *
  * @author Klaus Groenbaek
  *         Created 13/03/17.
  */
 @Slf4j
-public class NoGoAlgorithm<Value> {
+public class LineBasedAreaGroupingAlgorithm<Value> implements AreaGroupingAlgorithm<Value> {
 
     private final NoGoMatcher<Value> matcher;
     private final List<List<Value>> rowsOfColumns;
@@ -41,7 +43,7 @@ public class NoGoAlgorithm<Value> {
      * @param matcher       a matching algorithm
      * @param optimizer     a polygon optimizer
      */
-    public NoGoAlgorithm(List<List<Value>> rowsOfColumns, NoGoMatcher<Value> matcher, PolygonOptimizer optimizer) {
+    public LineBasedAreaGroupingAlgorithm(List<List<Value>> rowsOfColumns, NoGoMatcher<Value> matcher, PolygonOptimizer optimizer) {
         this.rowsOfColumns = rowsOfColumns;
         this.matcher = matcher;
         this.optimizer = optimizer;
@@ -58,6 +60,7 @@ public class NoGoAlgorithm<Value> {
      *
      * @return a list of figures that identifies the coordinates which matched
      */
+    @Override
     public List<Figure> getFigures() {
 
         List<List<LineSegment>> rows = new ArrayList<>();

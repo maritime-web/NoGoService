@@ -18,7 +18,7 @@ import com.google.common.collect.Lists;
 import dk.dma.nogoservice.algo.*;
 import dk.dma.nogoservice.dto.GeoCoordinate;
 import dk.dma.nogoservice.dto.NoGoPolygon;
-import dk.dma.nogoservice.entity.SouthKattegat;
+import dk.dma.nogoservice.entity.GeoCoordinateProvider;
 import dk.dma.nogoservice.util.MathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,7 +44,7 @@ public class FigureTransformer {
     public static final double halfLatSpacing = 0.00055504;
     public static final double halfLongSpacing = 0.00055504;
 
-    public List<NoGoPolygon> convertToGeoLocations(List<List<SouthKattegat>> grid, List<Figure> figures) {
+    public <Value  extends GeoCoordinateProvider> List<NoGoPolygon> convertToGeoLocations(List<List<Value>> grid, List<Figure> figures) {
 
         ArrayList<NoGoPolygon> noGoPolygons = new ArrayList<>();
 
@@ -52,7 +52,7 @@ public class FigureTransformer {
             List<GeoCoordinate> points = figure.getPoints().stream().map(new Function<Point, GeoCoordinate>() {
                 @Override
                 public GeoCoordinate apply(Point point) {
-                    SouthKattegat element = grid.get(point.y).get(point.x);
+                    Value element = grid.get(point.y).get(point.x);
                     return new GeoCoordinate(element.getLon(), element.getLat());
                 }
             }).collect(Collectors.toList());

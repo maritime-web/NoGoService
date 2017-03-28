@@ -19,7 +19,6 @@ import com.google.common.collect.Lists;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
-import dk.dma.nogoservice.algo.*;
 import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.entity.SouthKattegat;
 import lombok.SneakyThrows;
@@ -51,17 +50,18 @@ public class SouthKattegatQueryArea implements QueryArea {
 
     private final AtomicInteger nextRequestId = new AtomicInteger(0);
     private final Geometry sydKattegat;
-    private final FigureTransformer figureTransformer;
+    private final NoGoAlgorithmFacade noGoAlgorithm;
 
     @PersistenceContext
     private EntityManager em;
 
     @Autowired
     @SneakyThrows(ParseException.class)
-    public SouthKattegatQueryArea(FigureTransformer figureTransformer) {
+    public SouthKattegatQueryArea(NoGoAlgorithmFacade noGoAlgorithm) {
+        this.noGoAlgorithm = noGoAlgorithm;
         WKTReader reader = new WKTReader();
         sydKattegat = reader.read("POLYGON((9.419409 54.36294,  13.149009 54.36294, 13.149009 56.36316, 9.419409 56.36316, 9.419409 54.36294))");
-        this.figureTransformer = figureTransformer;
+
     }
 
     @Override
@@ -85,7 +85,7 @@ public class SouthKattegatQueryArea implements QueryArea {
         // find the min/max n,m values allowing us to select a rectangle. We find n,m to e sure we get a rectangle in case the lon/lat were not 100%
         // accurate, which would cause a jagged grid, making further operations harder
         QueryBoundary boundary = em.createQuery("select new dk.dma.nogoservice.dto.QueryBoundary(min(s.n), max(s.n), min(s.m), max(s.m)) " +
-                "from SouthKattegat s where s.lon > :west and s.lon < :east and s.lat > :south and s.lat < :north order by s.n, s.m", QueryBoundary.class)
+                "from SouthKattegat s where s.lon > :west and s.lon < :east and s.lat > :south and s.lat < :north", QueryBoundary.class)
                 .setParameter("west", request.getNorthWest().getLon())
                 .setParameter("east", request.getSouthEast().getLon())
                 .setParameter("south", request.getSouthEast().getLat())
@@ -108,15 +108,11 @@ public class SouthKattegatQueryArea implements QueryArea {
         // we can now turn the list into a grid, by splitting into rows of length maxN-minN
         List<List<SouthKattegat>> grid = Lists.partition(result, boundary.getColumnCount());
 
-        NoGoAlgorithm<SouthKattegat> algo = new NoGoAlgorithm<>(grid, southKattegat -> {
+        List<NoGoPolygon> polygons = noGoAlgorithm.getNoGo(grid, southKattegat -> {
             return southKattegat.getDepth() == null || southKattegat.getDepth() > -draught; // DB has altitude values so depth is negative
-        }, new DefaultPolygonOptimizer());
+        });
 
-
-        List<Figure> figures = algo.getFigures();
-        List<NoGoPolygon> polygons = figureTransformer.convertToGeoLocations(grid, figures);
-
-        log.info("Nogo grouping {}x{}, request {} in {} ms", grid. size(), grid.get(0).size(), requestId,  nogoCalculation.stop().elapsed(TimeUnit.MILLISECONDS));
+        log.info("Nogo grouping {}x{}, request {} in {} ms", grid.size(), grid.get(0).size(), requestId,  nogoCalculation.stop().elapsed(TimeUnit.MILLISECONDS));
 
         return new NoGoResponse().setPolygons(polygons);
     }
