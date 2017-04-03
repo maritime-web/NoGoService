@@ -1,0 +1,41 @@
+{
+  "forecastDate" : "2017-03-30T12:00:00.000+0000",
+  "queryTime" : "2017-04-03T11:50:52.000+0000",
+  "points" : [ {
+    "coordinate" : {
+      "lon" : 9.0,
+      "lat" : 57.45
+    }
+  }, {
+    "coordinate" : {
+      "lon" : 9.0,
+      "lat" : 57.45833
+    }
+  }, {
+    "coordinate" : {
+      "lon" : 9.0,
+      "lat" : 57.46667
+    }
+  }, {
+    "coordinate" : {
+      "lon" : 9.0,
+      "lat" : 57.475
+    }
+  }, {
+    "coordinate" : {
+      "lon" : 9.0,
+      "lat" : 57.48333
+    }
+  }, {
+    "coordinate" : {
+      "lon" : 9.0,
+      "lat" : 57.49167
+    }
+  }, {
+    "coordinate" : {
+      "lon" : 9.0,
+      "lat" : 57.5
+    }
+  } ],
+  "warning" : null
+}

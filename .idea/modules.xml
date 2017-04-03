@@ -3,8 +3,15 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/NoGoService.iml" filepath="$PROJECT_DIR$/.idea/modules/NoGoService.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/NoGoService_main.iml" filepath="$PROJECT_DIR$/.idea/modules/NoGoService_main.iml" group="NoGoService" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/NoGoService_test.iml" filepath="$PROJECT_DIR$/.idea/modules/NoGoService_test.iml" group="NoGoService" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/common/common.iml" filepath="$PROJECT_DIR$/.idea/modules/common/common.iml" group="common" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/common/common_main.iml" filepath="$PROJECT_DIR$/.idea/modules/common/common_main.iml" group="common" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/common/common_test.iml" filepath="$PROJECT_DIR$/.idea/modules/common/common_test.iml" group="common" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/dmiweather/dmiweather.iml" filepath="$PROJECT_DIR$/.idea/modules/dmiweather/dmiweather.iml" group="dmiweather" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/dmiweather/dmiweather_main.iml" filepath="$PROJECT_DIR$/.idea/modules/dmiweather/dmiweather_main.iml" group="dmiweather" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/dmiweather/dmiweather_test.iml" filepath="$PROJECT_DIR$/.idea/modules/dmiweather/dmiweather_test.iml" group="dmiweather" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/nogo/nogo.iml" filepath="$PROJECT_DIR$/.idea/modules/nogo/nogo.iml" group="nogo" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/nogo/nogo_main.iml" filepath="$PROJECT_DIR$/.idea/modules/nogo/nogo_main.iml" group="nogo" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/nogo/nogo_test.iml" filepath="$PROJECT_DIR$/.idea/modules/nogo/nogo_test.iml" group="nogo" />
     </modules>
   </component>
 </project>

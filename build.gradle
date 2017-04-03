@@ -1,79 +1,66 @@
 version ''
 
-apply plugin: 'java'
-apply plugin: 'war'
-apply plugin: 'findbugs'
-apply plugin: 'spring-boot'
-
 project.ext.jsr305 = "3.0.0"
+project.ext.jackson= "2.8.7"
 
-buildscript {
+subprojects {
+    version ''
+    apply plugin: 'java'
+    apply plugin: 'findbugs'
+
     repositories {
         mavenCentral()
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.1.RELEASE")
+
+        compile 'com.google.guava:guava:19.0'
+        compile 'org.projectlombok:lombok:1.16.14'
+        compile "com.fasterxml.jackson.core:jackson-core:$jackson"
+        compile "com.fasterxml.jackson.core:jackson-databind:$jackson"
+        compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackson"
+        compileOnly "com.google.code.findbugs:jsr305:$jsr305"
+        compileOnly "com.google.code.findbugs:annotations:$jsr305"
+        testCompileOnly "com.google.code.findbugs:jsr305:$jsr305"
+        testCompileOnly "com.google.code.findbugs:annotations:$jsr305"
+
     }
-}
 
-repositories {
-    mavenCentral()
-}
+    // fail the build if there are two versions of the same jar file
+    configurations.all({
+        resolutionStrategy {
+            failOnVersionConflict()
 
-dependencies {
+            force(
+            )
+        }
+    })
 
-    compile 'org.springframework.boot:spring-boot-starter-actuator'
-    compile 'org.springframework.boot:spring-boot-starter-web'
-    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
-
-    compile 'com.vividsolutions:jts:1.13'
-
-    compile 'mysql:mysql-connector-java:5.1.40'
-    compile 'com.google.guava:guava:19.0'
-    compile 'org.projectlombok:lombok:1.16.14'
-
-    compileOnly "com.google.code.findbugs:jsr305:$jsr305"
-    compileOnly "com.google.code.findbugs:annotations:$jsr305"
-
-    compile fileTree(dir: 'libs')
-
-    testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'com.h2database:h2:1.4.191'
-
-}
-
-configurations.all({
-    resolutionStrategy {
-        failOnVersionConflict()
-
-        force(
-        )
-    }
-})
-
-jar {
-    doFirst {
-        manifest {
-            attributes("build-version": "$System.env.BUILD_NUMBER")
+    jar {
+        doFirst {
+            manifest {
+                attributes("build-version": "$System.env.BUILD_NUMBER")
+            }
         }
     }
-}
 
-def onJenkins = System.getenv().get('BUILD_NUMBER') != null
+    def onJenkins = System.getenv().get('BUILD_NUMBER') != null
 
-tasks.withType(FindBugs) {
-    reports {
-        xml.enabled = onJenkins
-        html.enabled = !onJenkins
+    tasks.withType(FindBugs) {
+        reports {
+            xml.enabled = onJenkins
+            html.enabled = !onJenkins
+        }
+        ignoreFailures = onJenkins
     }
-    ignoreFailures = onJenkins
+
+    tasks.withType(Test) {
+        afterTest { desc, result ->
+            println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
+        }
+    }
+
 }
 
-tasks.withType(Test) {
-    afterTest { desc, result ->
-        println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
-    }
-}
 
 // task that can be used to test out groovy expressions
 task debug {

@@ -11,6 +11,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/common" />
+            <option value="$PROJECT_DIR$/dmiweather" />
+            <option value="$PROJECT_DIR$/nogo" />
           </set>
         </option>
       </GradleProjectSettings>

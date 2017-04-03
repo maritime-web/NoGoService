@@ -6,7 +6,8 @@
 #
 FROM java:8
 
-RUN wget "https://dma.ci.cloudbees.com/job/NoGoService/lastSuccessfulBuild/artifact/build/libs/NoGoService.war"
+RUN wget "https://dma.ci.cloudbees.com/job/NoGoService/lastSuccessfulBuild/artifact/build/libs/nogo.war"
+RUN wget "https://dma.ci.cloudbees.com/job/NoGoService/lastSuccessfulBuild/artifact/build/libs/dmiweather.war"
 
 copy content/*.* .
 RUN chmod a+x *.sh

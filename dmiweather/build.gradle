@@ -1,0 +1,32 @@
+apply plugin: 'war'
+apply plugin: 'spring-boot'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.1.RELEASE")
+    }
+}
+
+dependencies {
+    compile project(':common')
+    compile 'com.vividsolutions:jts:1.13'
+
+    compile 'edu.ucar:grib:8.0.29'
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    compile 'commons-net:commons-net:3.6'
+
+
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+}
+
+
+// task that can be used to test out groovy expressions
+task debug {
+    outputs.upToDateWhen { false }
+}
+
+

@@ -15,6 +15,12 @@
       <profile default="true" name="Default" enabled="true" />
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="common_main" target="1.8" />
+      <module name="common_test" target="1.8" />
+      <module name="dmiweather_main" target="1.8" />
+      <module name="dmiweather_test" target="1.8" />
+      <module name="nogo_main" target="1.8" />
+      <module name="nogo_test" target="1.8" />
       <module name="NoGoService_main" target="1.8" />
       <module name="NoGoService_test" target="1.8" />
     </bytecodeTargetLevel>

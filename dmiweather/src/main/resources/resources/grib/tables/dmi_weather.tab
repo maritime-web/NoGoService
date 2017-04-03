@@ -1,0 +1,12 @@
+-1:-1:128:1
+33:Uatm:Meridional wind at 10m (positive values west -> east) [m/s]
+34:Vatm:Zonal wind at 10m (positive values south -> north) [m/s]
+49:Uocean:Meridional ocean current (positive values west -> east) [m/s]
+50:Vocean:Zonal ocean current (positive values south -> north) [m/s]
+80:Tocean:Ocean water temperature [K]
+82:SSH:Deviation of sea level from mean [m]
+88:Socean:Salinity [kg/kg]
+91:Ice_con:Sea-ice concentration (0=no_ice ; 1=ice)  [fraction]
+92:Ice_thk:Sea-ice thickness [m]
+95:Uice:Meridional sea-ice drift (positive values west -> east) [m/s]
+96:Vice:Zonal sea-ice drift (positive values south -> north)    [m/s]
