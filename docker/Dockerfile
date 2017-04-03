@@ -6,10 +6,10 @@
 #
 FROM java:8
 
-RUN wget "https://dma.ci.cloudbees.com/job/NoGoService/lastSuccessfulBuild/artifact/build/libs/nogo.war"
-RUN wget "https://dma.ci.cloudbees.com/job/NoGoService/lastSuccessfulBuild/artifact/build/libs/dmiweather.war"
+RUN wget "https://dma.ci.cloudbees.com/job/NoGoService/lastSuccessfulBuild/artifact/nogo/build/libs/nogo.war"
+RUN wget "https://dma.ci.cloudbees.com/job/NoGoService/lastSuccessfulBuild/artifact/dmiweather/build/libs/dmiweather.war"
 
-copy content/*.* .
+copy content/*.* ./
 RUN chmod a+x *.sh
 
 EXPOSE 8080

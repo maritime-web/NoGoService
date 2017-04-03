@@ -16,6 +16,7 @@ package dk.dma.dmiweather.service;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import com.google.common.io.PatternFilenameFilter;
 import dk.dma.dmiweather.dto.ErrorMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.*;
@@ -46,6 +47,7 @@ public class FTPLoader {
      * location of the GRIB1 file2 with danish weather, the folder also contains the Baltic and North sea
      */
     private static final String DANISH_WEATHER_FOLDER = "/mhri/EfficientSea/metocean_shelf";
+    public static final Pattern FOLDER_PATTERN = Pattern.compile("\\d{10}");
     public static final Pattern DENMARK_FILE_PATTERN = Pattern.compile("DMI_metocean_DK\\.(\\d{10})\\.grb");
 
     private static final int FILE_COUNT = 121;
@@ -140,7 +142,7 @@ public class FTPLoader {
             // If we just started check if there is data from an earlier run and delete it
             File temp = new File(tempDirLocation);
             if (temp.exists()) {
-                File[] oldFolders = temp.listFiles(File::isDirectory);
+                File[] oldFolders = temp.listFiles(new PatternFilenameFilter(FOLDER_PATTERN));
                 if (oldFolders != null) {
                     List<File> foldersToDelete = Lists.newArrayList(oldFolders);
                     foldersToDelete.remove(current);

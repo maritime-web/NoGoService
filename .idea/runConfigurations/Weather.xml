@@ -1,14 +1,14 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Application" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+  <configuration default="false" name="Weather" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
       <pattern>
-        <option name="PATTERN" value="dk.dma.nogoservice.*" />
+        <option name="PATTERN" value="dk.dma.dmiweather.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="SPRING_BOOT_MAIN_CLASS" value="dk.dma.nogoservice.Application" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="dk.dma.dmiweather.Application" />
     <option name="ALTERNATIVE_JRE_PATH" />
-    <module name="NoGoService_main" />
+    <module name="dmiweather_main" />
     <envs />
     <method />
   </configuration>
