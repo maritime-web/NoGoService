@@ -19,6 +19,10 @@ import com.google.common.collect.Lists;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
+import dk.dma.common.dto.JSonWarning;
+import dk.dma.common.dto.JsonErrorException;
+import dk.dma.dmiweather.dto.*;
+import dk.dma.nogoservice.algo.NoGoMatcher;
 import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.entity.SouthKattegat;
 import lombok.SneakyThrows;
@@ -29,11 +33,13 @@ import org.springframework.stereotype.Component;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Query area for south Kattegat as defined by the area
+ * Query area for south Kattegat as defined by the area. If the request contains a time parameter, it will contact the weather service,
+ * to obtain tidal information, which is then added when calculating nogo areas
  * @author Klaus Groenbaek
  *         Created 13/03/17.
  */
@@ -51,14 +57,16 @@ public class SouthKattegatQueryArea implements QueryArea {
     private final AtomicInteger nextRequestId = new AtomicInteger(0);
     private final Geometry sydKattegat;
     private final NoGoAlgorithmFacade noGoAlgorithm;
+    private final WeatherService weatherService;
 
     @PersistenceContext
     private EntityManager em;
 
     @Autowired
     @SneakyThrows(ParseException.class)
-    public SouthKattegatQueryArea(NoGoAlgorithmFacade noGoAlgorithm) {
+    public SouthKattegatQueryArea(NoGoAlgorithmFacade noGoAlgorithm, WeatherService weatherService) {
         this.noGoAlgorithm = noGoAlgorithm;
+        this.weatherService = weatherService;
         WKTReader reader = new WKTReader();
         sydKattegat = reader.read("POLYGON((9.419409 54.36294,  13.149009 54.36294, 13.149009 56.36316, 9.419409 56.36316, 9.419409 54.36294))");
 
@@ -76,8 +84,26 @@ public class SouthKattegatQueryArea implements QueryArea {
 
     @Override
     public NoGoResponse getNogoAreas(NoGoRequest request) {
+        NoGoResponse noGoResponse = new NoGoResponse();
+
         int requestId = this.nextRequestId.incrementAndGet();
         log.info("processing request {}, input ", requestId, request);
+
+        Optional<TidalQueryObject> optionalWeather = Optional.empty();
+        if (request.getTime() != null) {
+            Stopwatch tidal = Stopwatch.createStarted();
+            try {
+                GridResponse weather = weatherService.getWeather(new GridRequest().setNorthWest(request.getNorthWest()).setSouthEast(request.getSouthEast())
+                        .setTime(request.getTime()).setParameters(new GridParameters().setSealevel(true)));
+                optionalWeather = Optional.of(new TidalQueryObject(weather));
+                log.info("loaded tidal info {}x{} for request {} in {} ms", weather.getNy(), weather.getNx(), requestId, tidal.stop().elapsed(TimeUnit.MILLISECONDS));
+            } catch (JsonErrorException e) {
+                WarningMessage warn = WarningMessage.MISSING_TIDAL_INFO;
+                noGoResponse.setWarning(new JSonWarning().setId(warn.getId()).setMessage(warn.getMessage()).setDetails(e.getJSonError().getMessage()));
+                log.warn("Failed to invoke remote weather service", e);
+            }
+        }
+
         // need to enlarge the area, whit half the size between measuring points to be sure we don't overlook anything at the edges
         request = request.plusPadding(lonOffset, latOffset);
         Double draught = request.getDraught();
@@ -108,13 +134,25 @@ public class SouthKattegatQueryArea implements QueryArea {
         // we can now turn the list into a grid, by splitting into rows of length maxN-minN
         List<List<SouthKattegat>> grid = Lists.partition(result, boundary.getColumnCount());
 
-        List<NoGoPolygon> polygons = noGoAlgorithm.getNoGo(grid, southKattegat -> {
-            return southKattegat.getDepth() == null || southKattegat.getDepth() > -draught; // DB has altitude values so depth is negative
-        });
+        NoGoMatcher<SouthKattegat> noGoMatcher;
+        if (optionalWeather.isPresent()) {
+            TidalQueryObject tidalQueryObject = optionalWeather.get();
+            noGoMatcher = southKattegat -> {
+                return southKattegat.getDepth() == null || -southKattegat.getDepth() + tidalQueryObject.getTidalHeight(southKattegat) > draught; // DB has altitude values so depth is negative
+            };
+        } else {
+            noGoMatcher = southKattegat -> {
+                return southKattegat.getDepth() == null || -southKattegat.getDepth() > draught; // DB has altitude values so depth is negative
+            };
+        }
+
+
+        List<NoGoPolygon> polygons = noGoAlgorithm.getNoGo(grid, noGoMatcher);
 
         log.info("Nogo grouping {}x{}, request {} in {} ms", grid.size(), grid.get(0).size(), requestId,  nogoCalculation.stop().elapsed(TimeUnit.MILLISECONDS));
 
-        return new NoGoResponse().setPolygons(polygons);
+
+        return noGoResponse.setPolygons(polygons);
     }
 
 }

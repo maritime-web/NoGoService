@@ -196,7 +196,7 @@ public class GridWeatherServiceTest {
         GridRequest request = new GridRequest().setParameters(new GridParameters().setWind(true)).setTime(departure.toInstant());
         configurer.setCoordinates(request);
 
-        return service.request(request, removeEmpty);
+        return service.request(request, removeEmpty, false);
     }
 
 

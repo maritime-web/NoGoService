@@ -61,7 +61,7 @@ public class WeatherService {
         this.coordinateRouding = coordinateRounding;
     }
 
-    public GridResponse request(GridRequest request, boolean removeEmpty) {
+    public GridResponse request(GridRequest request, boolean removeEmpty, boolean gridMetrics) {
 
         if (cache == null) {
             if (errorMessage != null) {
@@ -78,7 +78,7 @@ public class WeatherService {
             }
             GribFileWrapper wrapper = local.get(request.getTime());
             if (wrapper != null) {
-               return wrapper.getData(request, removeEmpty);
+               return wrapper.getData(request, removeEmpty, gridMetrics);
             } else {
                 // Not on the hour request, find the nearest
                 Map.Entry<Instant, GribFileWrapper> ceilingEntry = local.ceilingEntry(request.getTime());
@@ -87,9 +87,9 @@ public class WeatherService {
                 Duration ceilDuration = Duration.between(request.getTime(), ceilingEntry.getKey()).abs();
                 Duration floorDuration = Duration.between(request.getTime(), floorEntry.getKey()).abs();
                 if (ceilDuration.compareTo(floorDuration) < 0) {
-                    return ceilingEntry.getValue().getData(request, removeEmpty);
+                    return ceilingEntry.getValue().getData(request, removeEmpty, gridMetrics);
                 } else {
-                    return floorEntry.getValue().getData(request, removeEmpty);
+                    return floorEntry.getValue().getData(request, removeEmpty, gridMetrics);
                 }
             }
         }

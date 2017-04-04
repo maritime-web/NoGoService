@@ -17,6 +17,7 @@ package dk.dma.dmiweather.controller;
 import dk.dma.common.dto.JSonError;
 import dk.dma.dmiweather.dto.*;
 import dk.dma.dmiweather.service.WeatherService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,7 @@ import javax.validation.Valid;
  *         Created 03/04/17.
  */
 @RestController
+@Slf4j
 public class WeatherController {
 
 
@@ -46,12 +48,22 @@ public class WeatherController {
      * @return the coordinates with weather data
      */
     @PostMapping("/grid")
-    public GridResponse getGrid(@RequestBody @Valid GridRequest request, @RequestParam(name = "removeEmpty", required = false) boolean removeEmpty) {
-        return service.request(request, removeEmpty);
+    public GridResponse getGrid(@RequestBody @Valid GridRequest request, @RequestParam(name = "removeEmpty", required = false) boolean removeEmpty,
+                                @RequestParam(name = "gridMetrics", required = false) boolean gridMetrics) {
+        if (removeEmpty && gridMetrics) {
+            log.warn("Client requesting with removeEmpty and gridMetrics, this is not a good idea as indexes into data will not work as expected.");
+        }
+        return service.request(request, removeEmpty, gridMetrics);
     }
 
     @ExceptionHandler(WeatherException.class)
     public ResponseEntity<JSonError> handleException(WeatherException e) {
         return new ResponseEntity<>(e.toJsonError(), HttpStatus.valueOf(e.getError().getHttpCode()));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<JSonError> otherExceptions(Exception e) {
+        ErrorMessage error = ErrorMessage.UNCAUGHT_EXCEPTION;
+        return new ResponseEntity<>(error.toJsonError().setDetails(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

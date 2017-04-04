@@ -12,21 +12,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.dto;
+package dk.dma.dmiweather.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.dto.JSonWarning;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.util.List;
+
 /**
  * @author Klaus Groenbaek
- *         Created 22/03/17.
+ *         Created 29/03/17.
  */
 @Data
 @Accessors(chain = true)
-public class MultiPolygon {
-    private String wkt;
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class GridResponse {
+    private String forecastDate;
+    private String queryTime;
+    private List<GridDataPoint> points;
     private JSonWarning warning;
-
-
+    // values below are optional and only included when gridMetrics=true is on the URL
+    private Float dx;
+    private Float dy;
+    private GeoCoordinate northWest;
+    private GeoCoordinate southEast;
+    private Integer Nx;
+    private Integer Ny;
 }

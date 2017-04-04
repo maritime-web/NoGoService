@@ -14,8 +14,10 @@
  */
 package dk.dma.nogoservice;
 
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.annotation.Bean;
 
 /**
  * @author Klaus Groenbaek
@@ -26,5 +28,13 @@ public class Application {
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(Application.class).profiles(ApiProfiles.PRODUCTION).run(args);
+    }
+
+    @Bean(destroyMethod = "shutdown")
+    public PoolingHttpClientConnectionManager connectionManager() {
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        cm.setMaxTotal(100);
+        cm.setDefaultMaxPerRoute(20);
+        return cm;
     }
 }

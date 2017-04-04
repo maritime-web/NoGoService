@@ -12,23 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.dmiweather.dto;
+package dk.dma.nogoservice.service;
 
-import dk.dma.common.dto.JSonWarning;
-import lombok.Data;
-import lombok.experimental.Accessors;
-
-import java.util.List;
+import dk.dma.dmiweather.dto.GridRequest;
+import dk.dma.dmiweather.dto.GridResponse;
 
 /**
  * @author Klaus Groenbaek
- *         Created 29/03/17.
+ *         Created 04/04/17.
  */
-@Data
-@Accessors(chain = true)
-public class GridResponse {
-    private String forecastDate;
-    private String queryTime;
-    private List<GridDataPoint> points;
-    private JSonWarning warning;
+public interface WeatherService {
+    GridResponse getWeather(GridRequest request);
 }

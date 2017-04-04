@@ -107,7 +107,7 @@ public class GribFileWrapper {
     }
 
 
-    GridResponse getData(GridRequest request, boolean removeEmpty)  {
+    GridResponse getData(GridRequest request, boolean removeEmpty, boolean gridMetrics)  {
 
 
         // find the parameter with the smallest resolution, and ask for data in that format
@@ -161,7 +161,18 @@ public class GribFileWrapper {
             WarningMessage msg = WarningMessage.MISSING_DATA;
             response.setWarning(new JSonWarning().setId(msg.getId()).setMessage(msg.getMessage()).setDetails("Density and wave information is currently not provided."));
         }
-
+        if (gridMetrics) {
+            response.setDx(dx);
+            response.setDy(dy);
+            response.setNx(deltaX);
+            response.setNy(deltaY);
+            if (!removeEmpty) {
+                GeoCoordinate first = points.get(0).getCoordinate();
+                GeoCoordinate last = points.get(points.size() - 1).getCoordinate();
+                response.setNorthWest(new GeoCoordinate(first.getLon(), last.getLat()));
+                response.setSouthEast(new GeoCoordinate(last.getLon(), first.getLat()));
+            }
+        }
         return response;
     }
 

@@ -12,33 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.dmiweather.dto;
+package dk.dma.nogoservice.dto;
 
-import dk.dma.common.dto.JSonError;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
  * @author Klaus Groenbaek
- *         Created 03/04/17.
+ *         Created 04/04/17.
  */
 @AllArgsConstructor
 @Getter
-public enum ErrorMessage {
+public enum  WarningMessage {
 
-    FTP_PROBLEM(404, 1000, "Unable to load upstream data from weather provider."),
-    DATA_NOT_LOADED(404, 1001, "Data is not available yet, please try again later."),
-    OUT_OF_RANGE(404, 1002, "No data in the requested range."),
-    INVALID_GRID_LAT(400, 1003, "The south coordinate is larger than the north coordinate."),
-    INVALID_GRID_LOT(400, 1004, "The west coordinate is larger than the east coordinate."),
-    UNCAUGHT_EXCEPTION(500, 2000, "Internal server error.")
-    ;
-    private final int httpCode;
+    MISSING_TIDAL_INFO(70000, "Weather service was unable to provide tidal information.")
+            ;
     private final int id;
     private final String message;
-
-    public JSonError toJsonError() {
-        return new JSonError().setId(id).setMessage(message);
-    }
-
 }

@@ -12,21 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.dto;
+package dk.dma.common.dto;
 
-import dk.dma.common.dto.JSonWarning;
-import lombok.Data;
-import lombok.experimental.Accessors;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * @author Klaus Groenbaek
- *         Created 22/03/17.
+ *         Created 04/04/17.
  */
-@Data
-@Accessors(chain = true)
-public class MultiPolygon {
-    private String wkt;
-    private JSonWarning warning;
-
-
+@AllArgsConstructor
+@Getter
+public class JsonErrorException extends RuntimeException {
+    private final JSonError jSonError;
 }

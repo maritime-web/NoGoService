@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.*;
+import java.time.Instant;
 
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -24,6 +25,10 @@ public class NoGoRequest {
     @NotNull
     @Valid
     private Double draught;
+    /**
+     * Optional, when included we must include tidal information
+     */
+    private Instant time;
 
     public String toWKT() {
         return "POLYGON((" + northWest.toWKT() + ", " + southEast.getLon() + " " + northWest.getLat() + ", " +

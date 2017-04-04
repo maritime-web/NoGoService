@@ -63,6 +63,7 @@ public class SouthKattegat implements GeoCoordinateProvider {
     @Column(name = "depth")
     private Double depth;
 
+
     @Override
     public String toString() {
         return "SouthKattegat{" +

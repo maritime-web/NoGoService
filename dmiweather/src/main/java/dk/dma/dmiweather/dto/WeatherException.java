@@ -29,7 +29,7 @@ public class WeatherException extends RuntimeException {
         if (details == null) {
             details = "";
         }
-        return error.getMessage() + details;
+        return error.getMessage() + " " + details;
     }
 
     private final ErrorMessage error;
@@ -46,8 +46,7 @@ public class WeatherException extends RuntimeException {
 
     }
 
-
     public JSonError toJsonError() {
-        return new JSonError().setId(error.getId()).setMessage(error.getMessage()).setDetails(details);
+        return error.toJsonError().setDetails(details);
     }
 }

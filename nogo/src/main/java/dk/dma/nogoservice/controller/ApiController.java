@@ -45,7 +45,7 @@ public class ApiController {
     public MultiPolygon getNoGoAreasAsWKT(@Valid @RequestBody NoGoRequest request) {
         NoGoResponse nogo = noGoService.getNoGoAreas(request);
         String wkt = "MULTIPOLYGON (" + nogo.getPolygons().stream().map(p->p.toWKT().replace("POLYGON ", "")).collect(Collectors.joining(",")) + ")";
-        return new MultiPolygon().setWkt(wkt);
+        return new MultiPolygon().setWkt(wkt).setWarning(nogo.getWarning());
     }
 
 }
