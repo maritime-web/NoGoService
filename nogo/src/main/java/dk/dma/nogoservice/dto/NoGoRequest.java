@@ -6,12 +6,8 @@ import lombok.experimental.Accessors;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import javax.xml.bind.annotation.*;
 import java.time.Instant;
 
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "nogoRequest", propOrder = {})
 @Data
 @Accessors(chain = true)
 public class NoGoRequest {

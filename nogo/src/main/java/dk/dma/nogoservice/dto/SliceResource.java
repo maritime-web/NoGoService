@@ -14,25 +14,24 @@
  */
 package dk.dma.nogoservice.dto;
 
-import dk.dma.common.dto.JSonWarning;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.time.ZonedDateTime;
 
 /**
+ * A DTO that identifies a REST resource where slice information will be available
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 04/04/17.
  */
 @Data
 @Accessors(chain = true)
-public class NoGoResponse {
-    private List<NoGoPolygon> polygons;
-    private JSonWarning warning;
+public class SliceResource {
+    private String resourceURL;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z")
+    private ZonedDateTime time;
 
-    public MultiPolygon toMultiPolygon() {
-        String wkt = "MULTIPOLYGON (" + getPolygons().stream().map(p->p.toWKT().replace("POLYGON ", "")).collect(Collectors.joining(",")) + ")";
-        return new MultiPolygon().setWkt(wkt).setWarning(getWarning());
-    }
+
+
 }

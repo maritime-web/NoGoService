@@ -14,25 +14,19 @@
  */
 package dk.dma.nogoservice.dto;
 
-import dk.dma.common.dto.JSonWarning;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 04/04/17.
  */
 @Data
 @Accessors(chain = true)
-public class NoGoResponse {
-    private List<NoGoPolygon> polygons;
-    private JSonWarning warning;
+public class NoGoSliceResponse {
 
-    public MultiPolygon toMultiPolygon() {
-        String wkt = "MULTIPOLYGON (" + getPolygons().stream().map(p->p.toWKT().replace("POLYGON ", "")).collect(Collectors.joining(",")) + ")";
-        return new MultiPolygon().setWkt(wkt).setWarning(getWarning());
-    }
+    private List<SliceResource> slices;
+
 }

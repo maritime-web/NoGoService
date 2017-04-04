@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.stream.Collectors;
 
 /**
  * @author Klaus Groenbaek
@@ -44,8 +43,7 @@ public class ApiController {
     @PostMapping(value = "/area/wkt")
     public MultiPolygon getNoGoAreasAsWKT(@Valid @RequestBody NoGoRequest request) {
         NoGoResponse nogo = noGoService.getNoGoAreas(request);
-        String wkt = "MULTIPOLYGON (" + nogo.getPolygons().stream().map(p->p.toWKT().replace("POLYGON ", "")).collect(Collectors.joining(",")) + ")";
-        return new MultiPolygon().setWkt(wkt).setWarning(nogo.getWarning());
+        return nogo.toMultiPolygon();
     }
 
 }

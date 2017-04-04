@@ -19,6 +19,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * @author Klaus Groenbaek
  *         Created 10/03/17.
@@ -36,5 +39,10 @@ public class Application {
         cm.setMaxTotal(100);
         cm.setDefaultMaxPerRoute(20);
         return cm;
+    }
+
+    @Bean
+    public ExecutorService slicingExecutor() {
+        return Executors.newFixedThreadPool(2);
     }
 }

@@ -12,27 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.dto;
-
-import dk.dma.common.dto.JSonWarning;
-import lombok.Data;
-import lombok.experimental.Accessors;
-
-import java.util.List;
-import java.util.stream.Collectors;
+package dk.dma.nogoservice.service;
 
 /**
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 04/04/17.
  */
-@Data
-@Accessors(chain = true)
-public class NoGoResponse {
-    private List<NoGoPolygon> polygons;
-    private JSonWarning warning;
-
-    public MultiPolygon toMultiPolygon() {
-        String wkt = "MULTIPOLYGON (" + getPolygons().stream().map(p->p.toWKT().replace("POLYGON ", "")).collect(Collectors.joining(",")) + ")";
-        return new MultiPolygon().setWkt(wkt).setWarning(getWarning());
-    }
+public enum ResourceState {
+    Working, Done, Failed
 }

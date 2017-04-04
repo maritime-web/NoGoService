@@ -14,25 +14,22 @@
  */
 package dk.dma.nogoservice.dto;
 
-import dk.dma.common.dto.JSonWarning;
-import lombok.Data;
-import lombok.experimental.Accessors;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import dk.dma.common.dto.JSonError;
+import lombok.AllArgsConstructor;
 
 /**
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 04/04/17.
  */
-@Data
-@Accessors(chain = true)
-public class NoGoResponse {
-    private List<NoGoPolygon> polygons;
-    private JSonWarning warning;
+@AllArgsConstructor
+public enum  ErrorMessage {
+    UNCAUGHT_EXCEPTION(500, 20000, "Internal server error.")
+    ;
+    private final int httpCode;
+    private final int id;
+    private final String message;
 
-    public MultiPolygon toMultiPolygon() {
-        String wkt = "MULTIPOLYGON (" + getPolygons().stream().map(p->p.toWKT().replace("POLYGON ", "")).collect(Collectors.joining(",")) + ")";
-        return new MultiPolygon().setWkt(wkt).setWarning(getWarning());
+    public JSonError toJsonError() {
+        return new JSonError().setId(id).setMessage(message);
     }
 }
