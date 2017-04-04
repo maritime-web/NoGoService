@@ -16,7 +16,7 @@ package dk.dma.dmiweather.controller;
 
 import dk.dma.common.dto.JSonError;
 import dk.dma.dmiweather.dto.*;
-import dk.dma.dmiweather.service.WeatherServiceImpl;
+import dk.dma.dmiweather.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,10 +32,10 @@ import javax.validation.Valid;
 public class WeatherController {
 
 
-    private final WeatherServiceImpl service;
+    private final WeatherService service;
 
     @Autowired
-    public WeatherController(WeatherServiceImpl service) {
+    public WeatherController(WeatherService service) {
         this.service = service;
     }
 

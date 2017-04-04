@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.Assert.*;
 
@@ -61,8 +62,6 @@ public class GridWeatherServiceTest {
         assertEquals("Point should all be empty", 0, response.getPoints().size());
 
     }
-
-
 
     @Test
     public void allData() throws Exception {
@@ -104,6 +103,16 @@ public class GridWeatherServiceTest {
     public void tooFarSouth() throws Exception {
         outsideGrid(r -> r.setNorthWest(new GeoCoordinate(9.0, 57.5))
                 .setSouthEast(new GeoCoordinate(15.0, 51.0)));
+    }
+
+    @Test
+    public void wrongData() throws Exception {
+        try {
+            makeRequest(r->r.setTime(r.getTime().minus(3, ChronoUnit.DAYS)), true);
+            fail("Should throw exception.");
+        } catch (WeatherException e) {
+            assertEquals(ErrorMessage.OUT_OF_RANGE, e.getError());
+        }
     }
 
     @Test
@@ -155,7 +164,7 @@ public class GridWeatherServiceTest {
     private GridResponse makeRequest(CoordinateConfigurer configurer, boolean removeEmpty) throws IOException {
         ClassPathResource resource1 = new ClassPathResource("DMI_metocean_DK.2017033012.grb", getClass());
         ClassPathResource resource2 = new ClassPathResource("DMI_metocean_DK.2017033013.grb", getClass());
-        WeatherServiceImpl service = new WeatherServiceImpl(3, 5);
+        WeatherService service = new WeatherService(3, 5);
         service.newFiles(Lists.newArrayList(resource1.getFile(), resource2.getFile()));
 
         ZonedDateTime departure = ZonedDateTime.now(ZoneOffset.UTC).withMonth(3).withDayOfMonth(30).withHour(12).withMinute(0).withSecond(0).withNano(0);

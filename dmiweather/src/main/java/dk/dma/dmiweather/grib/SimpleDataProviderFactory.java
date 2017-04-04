@@ -14,11 +14,9 @@
  */
 package dk.dma.dmiweather.grib;
 
-import dk.dma.common.util.MathUtil;
 import dk.dma.dmiweather.dto.GridParameterType;
 import ucar.grib.grib1.Grib1Data;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,16 +48,9 @@ public class SimpleDataProviderFactory implements DataProviderFactory {
     }
 
     @Override
-    public Map<GridParameterType, DataProvider> create() throws IOException {
+    public Map<GridParameterType, DataProvider> create() {
         HashMap<GridParameterType, DataProvider> map = new HashMap<>();
-        float[] data = DataProviderFactory.getData(parameterAndRecord, grib1Data);
-        if (dataRounding != -1) {
-            for (int i = 0; i < data.length; i++) {
-                data[i] = MathUtil.round(data[i], dataRounding);
-            }
-        }
-
-        map.put(parameterType, new DataProvider(parameterAndRecord, data));
+        map.put(parameterType, new SimpleDataProvider(parameterAndRecord, grib1Data, dataRounding));
         return map;
     }
 }

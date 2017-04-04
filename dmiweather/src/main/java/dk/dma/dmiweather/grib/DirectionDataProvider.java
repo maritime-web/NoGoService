@@ -14,19 +14,22 @@
  */
 package dk.dma.dmiweather.grib;
 
-import dk.dma.dmiweather.dto.GridParameterType;
-
-import java.util.Map;
+import ucar.grib.grib1.Grib1Data;
 
 /**
- * Interface for factories that create DataProviders. Some providers need multiple data series, like zonal and meridional wind to create wind direction and wind speed
+ * Data provider that calculates the speed based on Zonal and Meridional data series
  * @author Klaus Groenbaek
- *         Created 31/03/17.
+ *         Created 04/04/17.
  */
-public interface DataProviderFactory {
-    /**
-     * Create one or more dataProviders
-     * @return a map of providers
-     */
-    Map<GridParameterType, DataProvider> create();
+public class DirectionDataProvider extends MeridionalZonalDataProvider {
+    private static final double R2D = 45.0 / Math.atan(1.0);
+
+    DirectionDataProvider(ParameterAndRecord meridional, ParameterAndRecord zonal, Grib1Data data, int dataRounding) {
+        super(meridional, zonal, data, dataRounding);
+    }
+
+    @Override
+    protected float calculate(float u, float v) {
+        return (float) (Math.atan2(v,u) * R2D + 180);
+    }
 }

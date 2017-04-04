@@ -47,11 +47,11 @@ public class FTPLoader {
      * location of the GRIB1 file2 with danish weather, the folder also contains the Baltic and North sea
      */
     private static final String DANISH_WEATHER_FOLDER = "/mhri/EfficientSea/metocean_shelf";
-    public static final Pattern FOLDER_PATTERN = Pattern.compile("\\d{10}");
-    public static final Pattern DENMARK_FILE_PATTERN = Pattern.compile("DMI_metocean_DK\\.(\\d{10})\\.grb");
+    private static final Pattern FOLDER_PATTERN = Pattern.compile("\\d{10}");
+    static final Pattern DENMARK_FILE_PATTERN = Pattern.compile("DMI_metocean_DK\\.(\\d{10})\\.grb");
 
     private static final int FILE_COUNT = 121;
-    private final WeatherServiceImpl gridWeatherService;
+    private final WeatherService gridWeatherService;
 
     private String tempDirLocation;
     /**
@@ -62,7 +62,7 @@ public class FTPLoader {
     private String hostname = "ftp.dmi.dk";
 
     @Autowired
-    public FTPLoader(WeatherServiceImpl gridWeatherService, @Value("${ftploader.tempdir:#{null}}") String tempDirLocation) {
+    public FTPLoader(WeatherService gridWeatherService, @Value("${ftploader.tempdir:#{null}}") String tempDirLocation) {
         this.gridWeatherService = gridWeatherService;
         this.tempDirLocation = (tempDirLocation != null ? tempDirLocation : System.getProperty("java.io.tmpdir"));
     }
@@ -196,7 +196,7 @@ public class FTPLoader {
         return transferred;
     }
 
-    public static void deleteRecursively(File lastTempDir) throws IOException {
+    private static void deleteRecursively(File lastTempDir) throws IOException {
         Path rootPath = lastTempDir.toPath();
         Files.walk(rootPath, FileVisitOption.FOLLOW_LINKS)
                 .sorted(Comparator.reverseOrder())  // flips the tree so leefs are deleted first

@@ -38,12 +38,13 @@ import java.util.*;
 public class GribFileWrapper {
 
     public static final float GRIB_NOT_DEFINED = -9999;     // Grib1BinaryDataSection.UNDEFINED
-    public static final int MERIDIONAL_WIND = 33;
-    public static final int ZONAL_WIND = 34;
-    public static final int MERIDIONAL_CURRENT = 49;
-    public static final int ZONAL_CURRENT = 50;
-    public static final int SEA_LEVEL = 82;
-    public static final ZoneId UTC = ZoneId.of("UTC");
+    private static final ZoneId UTC = ZoneId.of("UTC");
+    private static final int MERIDIONAL_WIND = 33;
+    private static final int ZONAL_WIND = 34;
+    private static final int MERIDIONAL_CURRENT = 49;
+    private static final int ZONAL_CURRENT = 50;
+    private static final int SEA_LEVEL = 82;
+
     private static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.000Z");
 
     private final Instant date;
@@ -51,11 +52,12 @@ public class GribFileWrapper {
     private final int dataRounding;
     private final int coordinateRouding;
 
-    public GribFileWrapper(Instant date, File file, int dataRounding, int coordinateRouding) {
+    GribFileWrapper(Instant date, File file, int dataRounding, int coordinateRouding) {
         this.date = date;
-        dataProviders = ImmutableMap.copyOf(initProviders(file));
         this.dataRounding = dataRounding;
         this.coordinateRouding = coordinateRouding;
+
+        dataProviders = ImmutableMap.copyOf(initProviders(file));
     }
 
     /**
@@ -105,7 +107,7 @@ public class GribFileWrapper {
     }
 
 
-    public GridResponse getData(GridRequest request, boolean removeEmpty)  {
+    GridResponse getData(GridRequest request, boolean removeEmpty)  {
 
 
         // find the parameter with the smallest resolution, and ask for data in that format

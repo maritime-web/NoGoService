@@ -11,7 +11,7 @@ buildscript {
 }
 
 dependencies {
-    compile project(':dmiweather')
+    compile project(':common')
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     compile 'org.springframework.boot:spring-boot-starter-web'
 
