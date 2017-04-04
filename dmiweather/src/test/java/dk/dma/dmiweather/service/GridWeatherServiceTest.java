@@ -137,6 +137,29 @@ public class GridWeatherServiceTest {
         assertEquals(expected, response.getForecastDate()) ;
     }
 
+    @Test
+    public void westLargerThanEast() throws Exception {
+        try {
+            makeRequest(r -> r.setNorthWest(new GeoCoordinate(12.0, 57.5))
+                    .setSouthEast(new GeoCoordinate(11.0, 53.0)), true);
+            fail("Request not valid");
+        } catch (WeatherException e) {
+            assertEquals(ErrorMessage.INVALID_GRID_LOT, e.getError());
+
+        }
+    }
+
+    @Test
+    public void southLargerThanNorth() throws Exception {
+        try {
+            makeRequest(r -> r.setNorthWest(new GeoCoordinate(11.0, 54.5))
+                    .setSouthEast(new GeoCoordinate(12.0, 55.0)), true);
+            fail("Request not valid");
+        } catch (WeatherException e) {
+            assertEquals(ErrorMessage.INVALID_GRID_LAT, e.getError());
+        }
+    }
+
 
     private void outsideGrid(CoordinateConfigurer configurer) throws IOException {
         try {

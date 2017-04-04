@@ -17,6 +17,8 @@ package dk.dma.dmiweather.grib;
 import com.google.common.math.DoubleMath;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.util.MathUtil;
+import dk.dma.dmiweather.dto.ErrorMessage;
+import dk.dma.dmiweather.dto.WeatherException;
 import dk.dma.dmiweather.service.GribFileWrapper;
 import lombok.Synchronized;
 import ucar.grib.grib1.Grib1GDSVariables;
@@ -113,6 +115,13 @@ public abstract class AbstractDataProvider implements DataProvider {
         if (northWest.getLon() < vars.getLo1() || northWest.getLat() > vars.getLa2() || southEast.getLon() > vars.getLo2() || southEast.getLat() < vars.getLa1()) {
             throw new IllegalArgumentException(String.format("Query is outside data grid, grid corners northWest:%s, southEast:%s",
                     new GeoCoordinate(vars.getLo1(), vars.getLa1()), new GeoCoordinate(vars.getLo2(), vars.getLa2())));
+        }
+
+        if (northWest.getLon() > southEast.getLon()) {
+            throw new WeatherException(ErrorMessage.INVALID_GRID_LOT);
+        }
+        if (northWest.getLat() < southEast.getLat()) {
+            throw new WeatherException(ErrorMessage.INVALID_GRID_LAT);
         }
 
         int resolutionX = DoubleMath.fuzzyCompare(this.dx, dx, 0.000001);

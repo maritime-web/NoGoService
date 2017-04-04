@@ -27,7 +27,9 @@ public enum ErrorMessage {
 
     FTP_PROBLEM(404, 1000, "Unable to load upstream data from weather provider."),
     DATA_NOT_LOADED(404, 1001, "Data is not available yet, please try again later."),
-    OUT_OF_RANGE(404, 1002, "No data in the requested range.")
+    OUT_OF_RANGE(404, 1002, "No data in the requested range."),
+    INVALID_GRID_LAT(400, 1003, "The south coordinate is larger than the north coordinate"),
+    INVALID_GRID_LOT(400, 1004, "The west coordinate is larger than the east coordinate"),
     ;
     private final int httpCode;
     private final int id;

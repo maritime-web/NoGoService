@@ -8,7 +8,7 @@
     </extension>
     <option name="SPRING_BOOT_MAIN_CLASS" value="dk.dma.nogoservice.Application" />
     <option name="ALTERNATIVE_JRE_PATH" />
-    <module name="" />
+    <module name="nogo_main" />
     <envs />
     <method />
   </configuration>
