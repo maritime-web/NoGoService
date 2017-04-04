@@ -1,41 +1,41 @@
 {
   "forecastDate" : "2017-03-30T12:00:00.000+0000",
-  "queryTime" : "2017-04-03T11:51:48.000+0000",
+  "queryTime" : "2017-04-04T11:21:22.000+0000",
   "points" : [ {
     "coordinate" : {
       "lon" : 10.52,
       "lat" : 57.5
     },
-    "windDirection" : 193.0,
-    "windSpeed" : 8.0
+    "windDirection" : 192.665,
+    "windSpeed" : 7.943
   }, {
     "coordinate" : {
       "lon" : 10.53389,
       "lat" : 57.5
     },
-    "windDirection" : 191.0,
-    "windSpeed" : 8.0
+    "windDirection" : 191.268,
+    "windSpeed" : 8.233
   }, {
     "coordinate" : {
       "lon" : 10.54778,
       "lat" : 57.5
     },
-    "windDirection" : 190.0,
-    "windSpeed" : 9.0
+    "windDirection" : 190.188,
+    "windSpeed" : 8.565
   }, {
     "coordinate" : {
       "lon" : 10.56167,
       "lat" : 57.5
     },
-    "windDirection" : 189.0,
-    "windSpeed" : 9.0
+    "windDirection" : 189.355,
+    "windSpeed" : 8.935
   }, {
     "coordinate" : {
       "lon" : 10.57556,
       "lat" : 57.5
     },
-    "windDirection" : 189.0,
-    "windSpeed" : 9.0
+    "windDirection" : 188.656,
+    "windSpeed" : 9.313
   } ],
   "warning" : null
 }
