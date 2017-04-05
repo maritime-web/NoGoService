@@ -8,6 +8,8 @@ import dk.dma.dmiweather.generated.Schedule;
 import dk.dma.dmiweather.generated.ScheduleElement;
 import dk.dma.dmiweather.generated.Waypoint;
 import dk.dma.dmiweather.service.WeatherService;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.MimeTypeUtils;
@@ -36,6 +38,15 @@ public class RouteWeatherController {
         this.service = service;
     }
 
+    // It doesn't look like Spring-fox can figure out that GridParameters is a object mapped from request parameters, so we need to declare it explicitly
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "wind", value = "Should wind direction and speed be included (deg, and m/s)", dataType = "boolean", paramType = "query"),
+            // @ApiImplicitParam(name = "wave", value = "Should wave infomation be included ",  dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "current", value = "Should current direction and speed be included (deg, and m/s)",  dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "density", value = "Should water density be included (kg per cubic meter)",  dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = "seaLevel", value = "Should sea level be included (meter over mean)",  dataType = "boolean", paramType = "query"),
+
+    })
     @ResponseBody
     @PostMapping(value = "/rtz", produces = {MimeTypeUtils.APPLICATION_JSON_VALUE, MimeTypeUtils.APPLICATION_XML_VALUE}, consumes = MimeTypeUtils.APPLICATION_XML_VALUE)
     public RouteResponse route(@RequestBody Route route, GridParameters parameters) {
