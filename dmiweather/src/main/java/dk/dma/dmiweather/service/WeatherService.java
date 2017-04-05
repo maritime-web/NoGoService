@@ -15,7 +15,10 @@
 package dk.dma.dmiweather.service;
 
 import com.google.common.base.Stopwatch;
-import dk.dma.dmiweather.dto.*;
+import dk.dma.dmiweather.dto.ErrorMessage;
+import dk.dma.dmiweather.dto.GridRequest;
+import dk.dma.dmiweather.dto.GridResponse;
+import dk.dma.dmiweather.dto.WeatherException;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +27,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.text.*;
-import java.time.*;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -44,7 +53,7 @@ public class WeatherService {
     private static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.000Z").withZone(ZoneId.of("UTC"));
 
     private static WeatherException dataOutOfRange(Instant start, Instant end) {
-        return new WeatherException(ErrorMessage.OUT_OF_RANGE, String.format("Current data set starts at %s and ends at %s, and is updated every %s hours" ,
+        return new WeatherException(ErrorMessage.OUT_OF_DATE_RANGE, String.format("Current data set starts at %s and ends at %s, and is updated every %s hours" ,
                 TIME_FORMATTER.format(start), TIME_FORMATTER.format(end), 6));
     }
 

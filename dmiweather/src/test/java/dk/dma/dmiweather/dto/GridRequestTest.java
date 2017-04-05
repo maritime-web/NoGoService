@@ -53,7 +53,7 @@ public class GridRequestTest {
 
         GridRequest request = new ObjectMapper().registerModule(new JavaTimeModule()).readValue(json, GridRequest.class);
         assertTrue("current", request.getParameters().getCurrent());
-        assertFalse("selevel", request.getParameters().getSealevel());
+        assertFalse("selevel", request.getParameters().getSeaLevel());
         assertEquals("NorthWest", new GeoCoordinate(12.5, 56.1), request.getNorthWest());
         assertEquals("southEast", new GeoCoordinate(12.9, 55.51), request.getSouthEast());
 

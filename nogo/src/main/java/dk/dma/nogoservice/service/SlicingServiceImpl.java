@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -58,7 +57,7 @@ public class SlicingServiceImpl implements SlicingService {
             String resourceId = UUID.randomUUID().toString();
             executorService.submit(new NoGoWorker(resourceId, noGoRequest));
             resultCache.put(resourceId, new ResourceProcessingResult());
-            slices.add(new SliceResource().setResourceURL(resourceId).setTime(start.atZone(ZoneId.of("UTC")))); // in the controller layer we will create the correct URL
+            slices.add(new SliceResource().setResourceURL(resourceId).setTime(start)); // in the controller layer we will create the correct URL
         }
 
         return new NoGoSliceResponse().setSlices(slices);

@@ -27,9 +27,12 @@ import ucar.unidata.io.RandomAccessFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.*;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author Klaus Groenbaek
@@ -44,6 +47,7 @@ public class GribFileWrapper {
     private static final int MERIDIONAL_CURRENT = 49;
     private static final int ZONAL_CURRENT = 50;
     private static final int SEA_LEVEL = 82;
+    private static final int DENSITY = 89;
 
     private static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.000Z");
 
@@ -152,14 +156,11 @@ public class GribFileWrapper {
             points.removeIf(p -> !p.hasValues());
         }
 
-        ZonedDateTime utc = date.atZone(UTC);
+        GridResponse response = new GridResponse().setPoints(points).setForecastDate(date).setQueryTime(Instant.now());
 
-        String utcDate = TIME_FORMATTER.format(utc);
-        GridResponse response = new GridResponse().setPoints(points).setForecastDate(utcDate).setQueryTime(TIME_FORMATTER.format(ZonedDateTime.now(UTC)));
-
-        if(request.getParameters().getDensity() || request.getParameters().getWave()) {
+        if(request.getParameters().isWave()) {
             WarningMessage msg = WarningMessage.MISSING_DATA;
-            response.setWarning(new JSonWarning().setId(msg.getId()).setMessage(msg.getMessage()).setDetails("Density and wave information is currently not provided."));
+            response.setWarning(new JSonWarning().setId(msg.getId()).setMessage(msg.getMessage()).setDetails("Wave information is currently not provided."));
         }
         if (gridMetrics) {
             response.setDx(dx);
@@ -187,6 +188,11 @@ public class GribFileWrapper {
                 GridParameterType.CurrentDirection, GridParameterType.CurrentSpeed, dataRounding));
 
         factories.add(new SimpleDataProviderFactory(gribData, lookup.get(SEA_LEVEL), GridParameterType.SeaLevel, dataRounding));
+        ParameterAndRecord densityParam = lookup.get(DENSITY);
+        if (densityParam != null) {
+            // old test files need to be updated since they don't have density
+            factories.add(new SimpleDataProviderFactory(gribData, densityParam, GridParameterType.Density, dataRounding));
+        }
 
         return factories;
     }

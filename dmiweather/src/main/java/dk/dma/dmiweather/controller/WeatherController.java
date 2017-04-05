@@ -14,14 +14,15 @@
  */
 package dk.dma.dmiweather.controller;
 
-import dk.dma.common.dto.JSonError;
-import dk.dma.dmiweather.dto.*;
+import dk.dma.dmiweather.dto.GridRequest;
+import dk.dma.dmiweather.dto.GridResponse;
 import dk.dma.dmiweather.service.WeatherService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 
@@ -56,14 +57,4 @@ public class WeatherController {
         return service.request(request, removeEmpty, gridMetrics);
     }
 
-    @ExceptionHandler(WeatherException.class)
-    public ResponseEntity<JSonError> handleException(WeatherException e) {
-        return new ResponseEntity<>(e.toJsonError(), HttpStatus.valueOf(e.getError().getHttpCode()));
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<JSonError> otherExceptions(Exception e) {
-        ErrorMessage error = ErrorMessage.UNCAUGHT_EXCEPTION;
-        return new ResponseEntity<>(error.toJsonError().setDetails(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
 }

@@ -14,12 +14,14 @@
  */
 package dk.dma.dmiweather.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.dto.JSonWarning;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -30,15 +32,18 @@ import java.util.List;
 @Accessors(chain = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GridResponse {
-    private String forecastDate;
-    private String queryTime;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
+    private Instant forecastDate;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
+    private Instant queryTime;
     private List<GridDataPoint> points;
     private JSonWarning warning;
     // values below are optional and only included when gridMetrics=true is on the URL
     private Float dx;
     private Float dy;
-    private GeoCoordinate northWest;
-    private GeoCoordinate southEast;
     private Integer Nx;
     private Integer Ny;
+    private GeoCoordinate northWest;
+    private GeoCoordinate southEast;
+
 }

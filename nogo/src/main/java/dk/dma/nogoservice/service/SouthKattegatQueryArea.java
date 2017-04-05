@@ -21,7 +21,9 @@ import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 import dk.dma.common.dto.JSonWarning;
 import dk.dma.common.dto.JsonErrorException;
-import dk.dma.dmiweather.dto.*;
+import dk.dma.dmiweather.dto.GridParameters;
+import dk.dma.dmiweather.dto.GridRequest;
+import dk.dma.dmiweather.dto.GridResponse;
 import dk.dma.nogoservice.algo.NoGoMatcher;
 import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.entity.SouthKattegat;
@@ -94,7 +96,7 @@ public class SouthKattegatQueryArea implements QueryArea {
             Stopwatch tidal = Stopwatch.createStarted();
             try {
                 GridResponse weather = weatherService.getWeather(new GridRequest().setNorthWest(request.getNorthWest()).setSouthEast(request.getSouthEast())
-                        .setTime(request.getTime()).setParameters(new GridParameters().setSealevel(true)));
+                        .setTime(request.getTime()).setParameters(new GridParameters().setSeaLevel(true)));
                 optionalWeather = Optional.of(new TidalQueryObject(weather));
                 log.info("loaded tidal info {}x{} for request {} in {} ms", weather.getNy(), weather.getNx(), requestId, tidal.stop().elapsed(TimeUnit.MILLISECONDS));
             } catch (JsonErrorException e) {

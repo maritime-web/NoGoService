@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 /**
  * A DTO that identifies a REST resource where slice information will be available
@@ -29,8 +29,8 @@ import java.time.ZonedDateTime;
 @Accessors(chain = true)
 public class SliceResource {
     private String resourceURL;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z")
-    private ZonedDateTime time;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
+    private Instant time;
 
 
 

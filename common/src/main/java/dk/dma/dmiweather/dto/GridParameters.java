@@ -15,6 +15,7 @@
 package dk.dma.dmiweather.dto;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
@@ -25,53 +26,36 @@ import java.util.List;
  *         Created 29/03/17.
  */
 @Data
+@Getter
 @Accessors(chain = true)
 public class GridParameters {
-    private Boolean wind;
-    private Boolean wave;
-    private Boolean current;
-    private Boolean density;
-    private Boolean sealevel;
-
-    public Boolean getWind() {
-        return wind != null && wind;
-    }
-
-    public Boolean getWave() {
-        return wave != null && wave;
-    }
-
-    public Boolean getCurrent() {
-        return current != null && current;
-    }
-
-    public Boolean getDensity() {
-        return density != null && density;
-    }
-
-    public Boolean getSealevel() {
-        return sealevel != null && sealevel;
-    }
+    private boolean wind;
+    private boolean wave;
+    private boolean current;
+    private boolean density;
+    private boolean seaLevel;
 
     public List<GridParameterType> getParamTypes() {
         List<GridParameterType> list = new ArrayList<>();
-        if (getWind()) {
+        if (isWind()) {
             list.add(GridParameterType.WindDirection);
             list.add(GridParameterType.WindSpeed);
         }
-        if (getWave()) {
+        if (isWave()) {
             //list.add(GridParameterType.Wave);
         }
-        if (getCurrent()) {
+        if (isCurrent()) {
             list.add(GridParameterType.CurrentDirection);
             list.add(GridParameterType.CurrentSpeed);
         }
-        if (getDensity()) {
-            //list.add(GridParameterType.Density);
+        if (isDensity()) {
+            list.add(GridParameterType.Density);
         }
-        if (getSealevel()) {
+        if (isSeaLevel()) {
             list.add(GridParameterType.SeaLevel);
         }
         return list;
     }
+
+
 }

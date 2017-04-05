@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 import static org.junit.Assert.*;
@@ -67,7 +66,7 @@ public class GridWeatherServiceTest {
     public void allData() throws Exception {
 
         GridResponse response = makeRequest(r-> r.setNorthWest(new GeoCoordinate(9.0, 57.5))
-                .setSouthEast(new GeoCoordinate(15.0, 53.0)).getParameters().setSealevel(true), false);
+                .setSouthEast(new GeoCoordinate(15.0, 53.0)).getParameters().setSeaLevel(true), false);
 
         assertEquals("Number of dataPoints", 433 *541, response.getPoints().size());
         // find the first datapoint with values
@@ -111,7 +110,7 @@ public class GridWeatherServiceTest {
             makeRequest(r->r.setTime(r.getTime().minus(3, ChronoUnit.DAYS)), true);
             fail("Should throw exception.");
         } catch (WeatherException e) {
-            assertEquals(ErrorMessage.OUT_OF_RANGE, e.getError());
+            assertEquals(ErrorMessage.OUT_OF_DATE_RANGE, e.getError());
         }
     }
 
@@ -122,8 +121,7 @@ public class GridWeatherServiceTest {
         GridResponse response = makeRequest(r -> r.setTime(departure.toInstant()).setNorthWest(new GeoCoordinate(10.52, 57.5))
                 .setSouthEast(new GeoCoordinate(10.57, 57.5)), false);
 
-        String expected = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.000Z").format(departure.withMinute(0));
-        assertEquals(expected, response.getForecastDate()) ;
+        assertEquals(departure.withMinute(0).toInstant(), response.getForecastDate()) ;
     }
 
     @Test
@@ -133,8 +131,8 @@ public class GridWeatherServiceTest {
         GridResponse response = makeRequest(r -> r.setTime(departure.toInstant()).setNorthWest(new GeoCoordinate(10.52, 57.5))
                 .setSouthEast(new GeoCoordinate(10.57, 57.5)), false);
 
-        String expected = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.000Z").format(departure.withMinute(0).plusHours(1));
-        assertEquals(expected, response.getForecastDate()) ;
+
+        assertEquals(departure.withMinute(0).plusHours(1).toInstant(), response.getForecastDate()) ;
     }
 
     @Test
@@ -165,8 +163,8 @@ public class GridWeatherServiceTest {
         try {
             makeRequest(configurer, false);
             fail("Should throw IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            assertEquals("Query is outside data grid, grid corners northWest:lon: 9.00000, lat:53.00000, southEast:lon: 15.00000, lat:57.50000", e.getMessage());
+        } catch (WeatherException e) {
+            assertEquals(ErrorMessage.OUTSIDE_GRID, e.getError());
         }
     }
 
