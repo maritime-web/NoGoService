@@ -14,7 +14,6 @@
  */
 package dk.dma.nogoservice.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -29,7 +28,6 @@ import java.time.Instant;
 @Accessors(chain = true)
 public class SliceResource {
     private String resourceURL;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
     private Instant time;
 
 

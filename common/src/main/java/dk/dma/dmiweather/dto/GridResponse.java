@@ -14,7 +14,6 @@
  */
 package dk.dma.dmiweather.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.dto.JSonWarning;
@@ -32,9 +31,7 @@ import java.util.List;
 @Accessors(chain = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GridResponse {
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
     private Instant forecastDate;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
     private Instant queryTime;
     private List<GridDataPoint> points;
     private JSonWarning warning;

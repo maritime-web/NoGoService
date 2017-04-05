@@ -14,7 +14,6 @@
  */
 package dk.dma.dmiweather.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import dk.dma.common.dto.GeoCoordinate;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -35,7 +34,6 @@ public class GridRequest {
     GeoCoordinate northWest;
     @Valid
     GeoCoordinate southEast;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
     @NotNull
     Instant time;
 }
