@@ -49,8 +49,6 @@ public class GribFileWrapper {
     private static final int SEA_LEVEL = 82;
     private static final int DENSITY = 89;
 
-    private static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.000Z");
-
     private final Instant date;
     private final ImmutableMap<GridParameterType, DataProvider> dataProviders;
     private final int dataRounding;

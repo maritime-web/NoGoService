@@ -113,7 +113,7 @@ public abstract class AbstractDataProvider implements DataProvider {
     private void validate(GeoCoordinate northWest, GeoCoordinate southEast, double dx, double dy, Grib1GDSVariables vars) {
 
         if (northWest.getLon() < vars.getLo1() || northWest.getLat() > vars.getLa2() || southEast.getLon() > vars.getLo2() || southEast.getLat() < vars.getLa1()) {
-            throw new WeatherException(ErrorMessage.OUTSIDE_GRID, String.format("Query is outside data grid, grid corners northWest:%s, southEast:%s",
+            throw new WeatherException(ErrorMessage.OUTSIDE_GRID, String.format("Query is outside data grid, grid corners northWest:(%s), southEast:(%s)",
                     new GeoCoordinate(vars.getLo1(), vars.getLa1()), new GeoCoordinate(vars.getLo2(), vars.getLa2())));
         }
 

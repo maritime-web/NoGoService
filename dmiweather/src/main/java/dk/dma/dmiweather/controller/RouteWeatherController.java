@@ -10,6 +10,7 @@ import dk.dma.dmiweather.generated.Waypoint;
 import dk.dma.dmiweather.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -25,7 +26,7 @@ import java.util.Optional;
  * @author Klaus Groenbaek
  *         Created 05/04/17.
  */
-@Controller
+@Controller()
 public class RouteWeatherController {
 
     private final WeatherService service;
@@ -36,7 +37,7 @@ public class RouteWeatherController {
     }
 
     @ResponseBody
-    @PostMapping("/rtz")
+    @PostMapping(value = "/rtz", produces = {MimeTypeUtils.APPLICATION_JSON_VALUE, MimeTypeUtils.APPLICATION_XML_VALUE}, consumes = MimeTypeUtils.APPLICATION_XML_VALUE)
     public RouteResponse route(@RequestBody Route route, GridParameters parameters) {
 
         if (parameters.getParamTypes().isEmpty()) {
@@ -76,7 +77,8 @@ public class RouteWeatherController {
                     GridResponse response = service.request(request, false, false);
                     GridDataPoint gridDataPoint = response.getPoints().get(0);
                     wp.setData(gridDataPoint);
-                    wp.setTime(response.getForecastDate());
+                    wp.setForecastTime(response.getForecastDate());
+                    wp.setWayPointTime(request.getTime());
                 } catch (WeatherException e) {
                     ErrorMessage error = e.getError();
                     wp.setError(new JSonWarning().setId(error.getId()).setMessage(error.getMessage()).setDetails(e.getDetails()));

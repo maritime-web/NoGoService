@@ -3,6 +3,9 @@ package dk.dma.dmiweather.dto;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 
 /**
@@ -12,6 +15,8 @@ import java.util.List;
  */
 @Data
 @Accessors(chain = true)
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlRootElement()
 public class RouteResponse {
     List<WeatherPoint> wayPoints;
 }

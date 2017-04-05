@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
 import java.time.Instant;
 
 /**
@@ -16,11 +19,15 @@ import java.time.Instant;
 @Data
 @NoArgsConstructor
 @Accessors(chain = true)
+@XmlAccessorType(XmlAccessType.FIELD)
 public class WeatherPoint {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
-    Instant time;
+    private Instant forecastTime;
 
-    GridDataPoint data;
-    JSonWarning error;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.000Z", timezone = "UTC")
+    private Instant wayPointTime;
+
+    private GridDataPoint data;
+    private JSonWarning error;
 
 }

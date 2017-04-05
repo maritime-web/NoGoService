@@ -19,6 +19,9 @@ import dk.dma.common.dto.GeoCoordinate;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+
 /**
  * @author Klaus Groenbaek
  *         Created 29/03/17.
@@ -26,6 +29,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@XmlAccessorType(XmlAccessType.FIELD)
 public class GridDataPoint {
     GeoCoordinate coordinate;
     Float seaLevel; // 82

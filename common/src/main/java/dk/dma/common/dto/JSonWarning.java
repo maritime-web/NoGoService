@@ -17,6 +17,9 @@ package dk.dma.common.dto;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+
 /**
  * Some times we have to issue warnings, we want to group the warning message with a messageID
  * Errors are sent in a similar fashion, but warnings are only sent with 200 OK responses.
@@ -25,6 +28,7 @@ import lombok.experimental.Accessors;
  */
 @Data
 @Accessors(chain = true)
+@XmlAccessorType(XmlAccessType.FIELD)
 public class JSonWarning {
     private int id;
     private String message;
