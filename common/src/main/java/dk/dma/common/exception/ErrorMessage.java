@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.dmiweather.dto;
+package dk.dma.common.exception;
 
 import dk.dma.common.dto.JSonError;
 import lombok.AllArgsConstructor;
@@ -29,12 +29,15 @@ public enum ErrorMessage {
     FTP_PROBLEM(404, 1000, "Unable to load upstream data from weather provider."),
     DATA_NOT_LOADED(404, 1001, "Data is not available yet, please try again later."),
     OUT_OF_DATE_RANGE(404, 1002, "No data in the requested range."),
-    INVALID_GRID_LAT(400, 1003, "The south coordinate is larger than the north coordinate."),
-    INVALID_GRID_LOT(400, 1004, "The west coordinate is larger than the east coordinate."),
-    NO_PARAMETERS(400, 1005, "You must specify at least one parameter (wind, wave, seaLevel, current, density) on the URL"),
-    OUTSIDE_GRID(404, 1006, "The requested coordinates are outside the supported grid."),
-    INVALID_RTZ(400, 1007, "The provided RTZ is not valid."),
-    UNCAUGHT_EXCEPTION(500, 2000, "Internal server error.")
+    NO_PARAMETERS(400, 1003, "You must specify at least one parameter (wind, wave, seaLevel, current, density) on the URL"),
+    INVALID_RTZ(400, 1004, "The provided RTZ is not valid."),
+
+    // general Grid errors
+    INVALID_GRID_LAT(400, 5001, "The south coordinate is larger than the north coordinate."),
+    INVALID_GRID_LOT(400, 5002, "The west coordinate is larger than the east coordinate."),
+    OUTSIDE_GRID(404, 5003, "The requested coordinates are outside the supported grid."),
+
+    UNCAUGHT_EXCEPTION(500, 10000, "Internal server error.")
     ;
     private final int httpCode;
     private final int id;

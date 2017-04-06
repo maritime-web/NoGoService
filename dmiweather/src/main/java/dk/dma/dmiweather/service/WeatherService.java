@@ -15,10 +15,10 @@
 package dk.dma.dmiweather.service;
 
 import com.google.common.base.Stopwatch;
-import dk.dma.dmiweather.dto.ErrorMessage;
+import dk.dma.common.exception.ErrorMessage;
 import dk.dma.dmiweather.dto.GridRequest;
 import dk.dma.dmiweather.dto.GridResponse;
-import dk.dma.dmiweather.dto.WeatherException;
+import dk.dma.common.exception.APIException;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -52,8 +52,8 @@ public class WeatherService {
 
     private static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.000Z").withZone(ZoneId.of("UTC"));
 
-    private static WeatherException dataOutOfRange(Instant start, Instant end) {
-        return new WeatherException(ErrorMessage.OUT_OF_DATE_RANGE, String.format("Current data set starts at %s and ends at %s, and is updated every %s hours" ,
+    private static APIException dataOutOfRange(Instant start, Instant end) {
+        return new APIException(ErrorMessage.OUT_OF_DATE_RANGE, String.format("Current data set starts at %s and ends at %s, and is updated every %s hours" ,
                 TIME_FORMATTER.format(start), TIME_FORMATTER.format(end), 6));
     }
 
@@ -74,10 +74,10 @@ public class WeatherService {
 
         if (cache == null) {
             if (errorMessage != null) {
-                throw new WeatherException(errorMessage);
+                throw new APIException(errorMessage);
             }
             else {
-                throw new WeatherException(ErrorMessage.DATA_NOT_LOADED);
+                throw new APIException(ErrorMessage.DATA_NOT_LOADED);
             }
         } else {
             // copy to a local to prevent a swap during the process

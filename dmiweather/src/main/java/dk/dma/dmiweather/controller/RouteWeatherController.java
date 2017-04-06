@@ -1,5 +1,7 @@
 package dk.dma.dmiweather.controller;
 
+import dk.dma.common.exception.ErrorMessage;
+import dk.dma.common.exception.APIException;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.dto.JSonWarning;
 import dk.dma.dmiweather.dto.*;
@@ -52,7 +54,7 @@ public class RouteWeatherController {
     public RouteResponse route(@RequestBody Route route, GridParameters parameters) {
 
         if (parameters.getParamTypes().isEmpty()) {
-           throw new WeatherException(ErrorMessage.NO_PARAMETERS);
+           throw new APIException(ErrorMessage.NO_PARAMETERS);
         }
 
         List<Schedule> schedules = route.getSchedules().getSchedule();
@@ -62,7 +64,7 @@ public class RouteWeatherController {
             List<ScheduleElement> scheduleElements = schedule.getCalculated().getSheduleElement();
             List<Waypoint> waypoints = route.getWaypoints().getWaypoint();
             if (scheduleElements.size() != waypoints.size()) {
-                throw new WeatherException(ErrorMessage.INVALID_RTZ, "the number of scheduleElements and WayPoints are not the same size");
+                throw new APIException(ErrorMessage.INVALID_RTZ, "the number of scheduleElements and WayPoints are not the same size");
             }
 
             ArrayList<WeatherPoint> weatherPoints = new ArrayList<>();
@@ -90,7 +92,7 @@ public class RouteWeatherController {
                     wp.setData(gridDataPoint);
                     wp.setForecastTime(response.getForecastDate());
                     wp.setWayPointTime(request.getTime());
-                } catch (WeatherException e) {
+                } catch (APIException e) {
                     ErrorMessage error = e.getError();
                     wp.setError(new JSonWarning().setId(error.getId()).setMessage(error.getMessage()).setDetails(e.getDetails()));
                 }
@@ -99,7 +101,7 @@ public class RouteWeatherController {
             return new RouteResponse().setWayPoints(weatherPoints);
         }
         else {
-            throw new WeatherException(ErrorMessage.INVALID_RTZ, "Missing schedule element with id=1");
+            throw new APIException(ErrorMessage.INVALID_RTZ, "Missing schedule element with id=1");
         }
     }
 }

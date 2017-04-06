@@ -17,6 +17,9 @@ package dk.dma.nogoservice.service;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
+import dk.dma.common.exception.APIException;
+import dk.dma.common.exception.ErrorMessage;
+import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.nogoservice.dto.NoGoRequest;
 import dk.dma.nogoservice.dto.NoGoResponse;
 import lombok.SneakyThrows;
@@ -49,6 +52,16 @@ public class DefaultNoGoService implements NoGoService {
     @SneakyThrows(ParseException.class)
     public NoGoResponse getNoGoAreas(@Valid NoGoRequest request) {
 
+        GeoCoordinate northWest = request.getNorthWest();
+        GeoCoordinate southEast = request.getSouthEast();
+
+        if (northWest.getLon() > southEast.getLon()) {
+            throw new APIException(ErrorMessage.INVALID_GRID_LOT);
+        }
+        if (northWest.getLat() < southEast.getLat()) {
+            throw new APIException(ErrorMessage.INVALID_GRID_LAT);
+        }
+
         String wkt = request.toWKT();
         WKTReader reader = new WKTReader();
         Geometry area = reader.read(wkt);
@@ -58,7 +71,7 @@ public class DefaultNoGoService implements NoGoService {
             }
         }
 
-        throw new IllegalArgumentException("Depth service does not support the give area, supported areas are " +
+        throw new APIException(ErrorMessage.OUTSIDE_GRID, "Depth service does not support the give area, supported areas are " +
                 queryAreas.stream().map(QueryArea::getName).collect(Collectors.joining(",")));
     }
 

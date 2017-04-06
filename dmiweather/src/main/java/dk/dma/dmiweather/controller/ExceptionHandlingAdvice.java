@@ -1,8 +1,8 @@
 package dk.dma.dmiweather.controller;
 
 import dk.dma.common.dto.JSonError;
-import dk.dma.dmiweather.dto.ErrorMessage;
-import dk.dma.dmiweather.dto.WeatherException;
+import dk.dma.common.exception.ErrorMessage;
+import dk.dma.common.exception.APIException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Slf4j
 public class ExceptionHandlingAdvice {
 
-    @ExceptionHandler(WeatherException.class)
-    public ResponseEntity<JSonError> handleException(WeatherException e) {
+    @ExceptionHandler(APIException.class)
+    public ResponseEntity<JSonError> handleException(APIException e) {
         return new ResponseEntity<>(e.toJsonError(), HttpStatus.valueOf(e.getError().getHttpCode()));
     }
 

@@ -16,6 +16,8 @@ package dk.dma.nogoservice.service;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import dk.dma.common.exception.APIException;
+import dk.dma.common.exception.ErrorMessage;
 import dk.dma.nogoservice.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -86,8 +88,10 @@ public class SlicingServiceImpl implements SlicingService {
             try {
                 NoGoResponse noGoAreas = noGoService.getNoGoAreas(request);
                 resultCache.put(resourceId, ResourceProcessingResult.done(noGoAreas));
-            } catch (Exception e) {
+            } catch (APIException e) {
                 resultCache.put(resourceId, ResourceProcessingResult.failed(e));
+            } catch (Exception e) {
+                resultCache.put(resourceId, ResourceProcessingResult.failed(new APIException(ErrorMessage.UNCAUGHT_EXCEPTION,e.getMessage())));
             }
         }
     }

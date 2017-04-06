@@ -14,6 +14,7 @@
  */
 package dk.dma.nogoservice.service;
 
+import dk.dma.common.exception.APIException;
 import dk.dma.nogoservice.dto.NoGoResponse;
 import lombok.Getter;
 
@@ -27,19 +28,19 @@ public class ResourceProcessingResult {
         return new ResourceProcessingResult(ResourceState.Done, response, null);
     }
 
-    static ResourceProcessingResult failed(Exception exception) {
+    static ResourceProcessingResult failed(APIException exception) {
         return new ResourceProcessingResult(ResourceState.Failed, null, exception);
     }
 
     private final ResourceState state;
-    private final Exception exception;
+    private final APIException exception;
     private final NoGoResponse response;
 
     ResourceProcessingResult() {
         this(ResourceState.Working, null, null);
     }
 
-    private ResourceProcessingResult(ResourceState state, NoGoResponse response, Exception exception) {
+    private ResourceProcessingResult(ResourceState state, NoGoResponse response, APIException exception) {
         this.state = state;
         this.exception = exception;
         this.response = response;

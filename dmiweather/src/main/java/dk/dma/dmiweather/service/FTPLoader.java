@@ -17,7 +17,7 @@ package dk.dma.dmiweather.service;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.io.PatternFilenameFilter;
-import dk.dma.dmiweather.dto.ErrorMessage;
+import dk.dma.common.exception.ErrorMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.*;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -97,7 +97,7 @@ public class SlicingController {
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
         }
         if (state == ResourceState.Failed) {
-            JSonError jSonError = ErrorMessage.UNCAUGHT_EXCEPTION.toJsonError().setDetails(resourceProcessingResult.getException().getMessage());
+            JSonError jSonError = resourceProcessingResult.getException().toJsonError();
             return new ResponseEntity<>(jSonError,HttpStatus.INTERNAL_SERVER_ERROR);
         }
 

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.dmiweather.dto;
+package dk.dma.common.exception;
 
 import dk.dma.common.dto.JSonError;
 import lombok.Getter;
@@ -23,7 +23,7 @@ import lombok.Getter;
  */
 
 @Getter
-public class WeatherException extends RuntimeException {
+public class APIException extends RuntimeException {
 
     private static String createMessage(ErrorMessage error, String details) {
         if (details == null) {
@@ -35,11 +35,11 @@ public class WeatherException extends RuntimeException {
     private final ErrorMessage error;
     private final String details;
 
-    public WeatherException(ErrorMessage error) {
+    public APIException(ErrorMessage error) {
         this(error, null);
     }
 
-    public WeatherException(ErrorMessage error, String details) {
+    public APIException(ErrorMessage error, String details) {
         super(createMessage(error, details));
         this.error = error;
         this.details = details;

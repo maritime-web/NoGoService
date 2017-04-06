@@ -23,17 +23,20 @@ import javax.validation.constraints.NotNull;
 import java.time.Instant;
 
 /**
+ * Request for weather for a grid.
  * @author Klaus Groenbaek
  *         Created 29/03/17.
  */
 @Data
 @Accessors(chain = true)
 public class GridRequest {
-    GridParameters parameters;
     @Valid
-    GeoCoordinate northWest;
+    private GridParameters parameters;
     @Valid
-    GeoCoordinate southEast;
+    private GeoCoordinate northWest;
+    @Valid
+    private GeoCoordinate southEast;
     @NotNull
-    Instant time;
+    private Instant time;
+
 }

@@ -17,6 +17,8 @@ package dk.dma.dmiweather.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.Lists;
+import dk.dma.common.exception.ErrorMessage;
+import dk.dma.common.exception.APIException;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.dmiweather.dto.*;
 import lombok.extern.slf4j.Slf4j;
@@ -109,7 +111,7 @@ public class GridWeatherServiceTest {
         try {
             makeRequest(r->r.setTime(r.getTime().minus(3, ChronoUnit.DAYS)), true);
             fail("Should throw exception.");
-        } catch (WeatherException e) {
+        } catch (APIException e) {
             assertEquals(ErrorMessage.OUT_OF_DATE_RANGE, e.getError());
         }
     }
@@ -141,7 +143,7 @@ public class GridWeatherServiceTest {
             makeRequest(r -> r.setNorthWest(new GeoCoordinate(12.0, 57.5))
                     .setSouthEast(new GeoCoordinate(11.0, 53.0)), true);
             fail("Request not valid");
-        } catch (WeatherException e) {
+        } catch (APIException e) {
             assertEquals(ErrorMessage.INVALID_GRID_LOT, e.getError());
 
         }
@@ -153,7 +155,7 @@ public class GridWeatherServiceTest {
             makeRequest(r -> r.setNorthWest(new GeoCoordinate(11.0, 54.5))
                     .setSouthEast(new GeoCoordinate(12.0, 55.0)), true);
             fail("Request not valid");
-        } catch (WeatherException e) {
+        } catch (APIException e) {
             assertEquals(ErrorMessage.INVALID_GRID_LAT, e.getError());
         }
     }
@@ -163,7 +165,7 @@ public class GridWeatherServiceTest {
         try {
             makeRequest(configurer, false);
             fail("Should throw IllegalArgumentException");
-        } catch (WeatherException e) {
+        } catch (APIException e) {
             assertEquals(ErrorMessage.OUTSIDE_GRID, e.getError());
         }
     }
