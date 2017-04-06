@@ -140,11 +140,11 @@ public class SouthKattegatQueryArea implements QueryArea {
         if (optionalWeather.isPresent()) {
             TidalQueryObject tidalQueryObject = optionalWeather.get();
             noGoMatcher = southKattegat -> {
-                return southKattegat.getDepth() == null || -southKattegat.getDepth() + tidalQueryObject.getTidalHeight(southKattegat) > draught; // DB has altitude values so depth is negative
+                return southKattegat.getDepth() == null || -southKattegat.getDepth() + tidalQueryObject.getTidalHeight(southKattegat) < draught; // DB has altitude values so depth is negative
             };
         } else {
             noGoMatcher = southKattegat -> {
-                return southKattegat.getDepth() == null || -southKattegat.getDepth() > draught; // DB has altitude values so depth is negative
+                return southKattegat.getDepth() == null || -southKattegat.getDepth() < draught; // DB has altitude values so depth is negative
             };
         }
 

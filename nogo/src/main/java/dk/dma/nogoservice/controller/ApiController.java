@@ -14,10 +14,15 @@
  */
 package dk.dma.nogoservice.controller;
 
-import dk.dma.nogoservice.dto.*;
+import dk.dma.nogoservice.dto.MultiPolygon;
+import dk.dma.nogoservice.dto.NoGoRequest;
+import dk.dma.nogoservice.dto.NoGoResponse;
 import dk.dma.nogoservice.service.NoGoService;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 
@@ -36,11 +41,13 @@ public class ApiController {
     }
 
     @PostMapping(value = "/area")
+    @ApiOperation(value = "Get NoGo area", notes = "Returns structured data for all the NoGo polygons. If time is included the tidal information will be included in the NoGo calculation.")
     public NoGoResponse getNoGoAreas(@Valid @RequestBody NoGoRequest request) {
         return noGoService.getNoGoAreas(request);
     }
 
     @PostMapping(value = "/area/wkt")
+    @ApiOperation(value = "Get NoGo area as WKT", notes = "Returns a single MultiPolygon with all the nogo areas. If time is included the tidal information will be included in the NoGo calculation.")
     public MultiPolygon getNoGoAreasAsWKT(@Valid @RequestBody NoGoRequest request) {
         NoGoResponse nogo = noGoService.getNoGoAreas(request);
         return nogo.toMultiPolygon();

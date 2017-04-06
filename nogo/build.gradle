@@ -22,6 +22,8 @@ dependencies {
     compile fileTree(dir: 'libs', include: '*.jar')
 
     compile 'org.apache.httpcomponents:httpclient:4.5'
+    compile 'io.springfox:springfox-swagger2:2.6.1'
+    compile 'io.springfox:springfox-swagger-ui:2.6.1'
 
     testCompile 'com.h2database:h2:1.4.191'
     testCompile 'org.springframework.boot:spring-boot-starter-test'

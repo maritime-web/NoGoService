@@ -21,6 +21,10 @@ package dk.dma.nogoservice.algo;
  */
 @FunctionalInterface
 public interface NoGoMatcher<Value> {
-
+     /**
+      *
+      * @param value the value to check
+      * @return true if this is matches (is a nogo area)
+      */
      boolean matches(Value value);
 }

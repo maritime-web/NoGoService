@@ -5,7 +5,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import javax.validation.Valid;
-import javax.validation.constraints.*;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import java.time.Instant;
 
 
