@@ -32,10 +32,14 @@ public enum ErrorMessage {
     NO_PARAMETERS(400, 1003, "You must specify at least one parameter (wind, wave, seaLevel, current, density) on the URL"),
     INVALID_RTZ(400, 1004, "The provided RTZ is not valid."),
 
+    // general user input errors
+    REQUEST_NOT_PARSED(400, 2005, "Could not parse request."),
+
     // general Grid errors
     INVALID_GRID_LAT(400, 5001, "The south coordinate is larger than the north coordinate."),
     INVALID_GRID_LOT(400, 5002, "The west coordinate is larger than the east coordinate."),
     OUTSIDE_GRID(404, 5003, "The requested coordinates are outside the supported grid."),
+
 
     UNCAUGHT_EXCEPTION(500, 10000, "Internal server error.")
     ;

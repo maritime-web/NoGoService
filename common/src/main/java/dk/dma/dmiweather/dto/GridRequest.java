@@ -19,6 +19,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import javax.validation.Valid;
+import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
 
@@ -38,5 +39,18 @@ public class GridRequest {
     private GeoCoordinate southEast;
     @NotNull
     private Instant time;
+
+    private Integer nx = null;
+    private Integer ny = null;
+
+    /**
+     * Since you can't do composite field validation, we have to create a dummyProperty so we can validate if the
+     * fields are set correctly
+     * @return true if both or non of the nx/ny values are set
+     */
+    @AssertTrue(message =  "You must either set both nx and ny or none of them.")
+    public boolean isInValid() {
+        return (nx == null && ny == null) || (nx != null && ny != null);
+    }
 
 }

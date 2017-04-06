@@ -42,7 +42,7 @@ public abstract class MeridionalZonalDataProvider extends AbstractDataProvider {
     @Override
     @SneakyThrows(IOException.class)
     public float[] getData() {
-        Grib1Record record = parameterAndRecord.record;
+        Grib1Record record = meridional.record;
         Grib1ProductDefinitionSection pds = record.getPDS();
 
         //noinspection deprecation

@@ -29,20 +29,25 @@ import javax.validation.constraints.NotNull;
 @Accessors(chain = true)
 public class GeoCoordinate {
     @NotNull
-    private Double lon;
+    private Float lon;
     @NotNull
-    private Double lat;
+    private Float lat;
 
     public GeoCoordinate(float lon, float lat) {
-        this.lon = (double) lon;
-        this.lat = (double) lat;
+        this.lon = lon;
+        this.lat = lat;
+    }
+
+    public GeoCoordinate(double lon, double lat) {
+        this.lon = (float) lon;
+        this.lat = (float) lat;
     }
 
     public String toWKT() {
         return lon + " " + lat;
     }
 
-    public GeoCoordinate adjusted(double deltaLon, double deltaLat) {
+    public GeoCoordinate adjusted(float deltaLon, float deltaLat) {
         return new GeoCoordinate(lon+deltaLon, lat+deltaLat);
     }
 

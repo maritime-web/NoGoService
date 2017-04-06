@@ -72,35 +72,41 @@ public class WeatherService {
 
     public GridResponse request(GridRequest request, boolean removeEmpty, boolean gridMetrics) {
 
-        if (cache == null) {
-            if (errorMessage != null) {
-                throw new APIException(errorMessage);
-            }
-            else {
-                throw new APIException(ErrorMessage.DATA_NOT_LOADED);
-            }
-        } else {
-            // copy to a local to prevent a swap during the process
-            ConcurrentSkipListMap<Instant, GribFileWrapper> local = this.cache;
-            if (request.getTime().isBefore(local.firstKey()) || request.getTime().isAfter(local.lastKey())) {
-                throw dataOutOfRange(local.firstKey(), local.lastKey());
-            }
-            GribFileWrapper wrapper = local.get(request.getTime());
-            if (wrapper != null) {
-               return wrapper.getData(request, removeEmpty, gridMetrics);
-            } else {
-                // Not on the hour request, find the nearest
-                Map.Entry<Instant, GribFileWrapper> ceilingEntry = local.ceilingEntry(request.getTime());
-                Map.Entry<Instant, GribFileWrapper> floorEntry = local.floorEntry(request.getTime());
+        Stopwatch stopwatch = Stopwatch.createStarted();
 
-                Duration ceilDuration = Duration.between(request.getTime(), ceilingEntry.getKey()).abs();
-                Duration floorDuration = Duration.between(request.getTime(), floorEntry.getKey()).abs();
-                if (ceilDuration.compareTo(floorDuration) < 0) {
-                    return ceilingEntry.getValue().getData(request, removeEmpty, gridMetrics);
+        try {
+            if (cache == null) {
+                if (errorMessage != null) {
+                    throw new APIException(errorMessage);
+                }
+                else {
+                    throw new APIException(ErrorMessage.DATA_NOT_LOADED);
+                }
+            } else {
+                // copy to a local to prevent a swap during the process
+                ConcurrentSkipListMap<Instant, GribFileWrapper> local = this.cache;
+                if (request.getTime().isBefore(local.firstKey()) || request.getTime().isAfter(local.lastKey())) {
+                    throw dataOutOfRange(local.firstKey(), local.lastKey());
+                }
+                GribFileWrapper wrapper = local.get(request.getTime());
+                if (wrapper != null) {
+                   return wrapper.getData(request, removeEmpty, gridMetrics);
                 } else {
-                    return floorEntry.getValue().getData(request, removeEmpty, gridMetrics);
+                    // Not on the hour request, find the nearest
+                    Map.Entry<Instant, GribFileWrapper> ceilingEntry = local.ceilingEntry(request.getTime());
+                    Map.Entry<Instant, GribFileWrapper> floorEntry = local.floorEntry(request.getTime());
+
+                    Duration ceilDuration = Duration.between(request.getTime(), ceilingEntry.getKey()).abs();
+                    Duration floorDuration = Duration.between(request.getTime(), floorEntry.getKey()).abs();
+                    if (ceilDuration.compareTo(floorDuration) < 0) {
+                        return ceilingEntry.getValue().getData(request, removeEmpty, gridMetrics);
+                    } else {
+                        return floorEntry.getValue().getData(request, removeEmpty, gridMetrics);
+                    }
                 }
             }
+        } finally {
+            log.info("Completed weather request in {} ms", stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
         }
     }
 

@@ -39,8 +39,8 @@ public class FigureTransformer {
      * The data is made up by distinct points, with a distance between. We therefore take half the distance between a Go and noGo point and add it as padding
      * The spacing is 0.00111 between points on both the lon and lat axis, which corresponds to a longitude delta of approximately 70m, and latitude delta of 123m
      */
-    public static final double halfLatSpacing = 0.00055504;
-    public static final double halfLongSpacing = 0.00055504;
+    public static final float halfLatSpacing = 0.00055504f;
+    public static final float halfLongSpacing = 0.00055504f;
 
     public <Value extends GeoCoordinateProvider> List<NoGoPolygon> convertToGeoLocations(List<List<Value>> grid, List<Figure> figures) {
 

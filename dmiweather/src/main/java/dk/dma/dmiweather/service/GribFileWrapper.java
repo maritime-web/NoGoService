@@ -15,6 +15,7 @@
 package dk.dma.dmiweather.service;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.UnmodifiableIterator;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.dto.JSonWarning;
 import dk.dma.common.util.MathUtil;
@@ -29,7 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +58,6 @@ public class GribFileWrapper {
         this.date = date;
         this.dataRounding = dataRounding;
         this.coordinateRouding = coordinateRouding;
-
         dataProviders = ImmutableMap.copyOf(initProviders(file));
     }
 
@@ -108,31 +107,42 @@ public class GribFileWrapper {
         return ImmutableMap.copyOf(map);
     }
 
-
     GridResponse getData(GridRequest request, boolean removeEmpty, boolean gridMetrics)  {
 
-
-        // find the parameter with the smallest resolution, and ask for data in that format
-        float dx = 360;
-        float dy = 360;
-        List<GridParameterType> parameterTypes = request.getParameters().getParamTypes();
-        for (GridParameterType type : parameterTypes) {
-            dx = Math.min(dataProviders.get(type).getDx(), dx);
-            dy = Math.min(dataProviders.get(type).getDy(), dy);
+        UnmodifiableIterator<DataProvider> iterator = dataProviders.values().iterator();
+        DataProvider firstProvider = iterator.next();
+        firstProvider.validate(request.getNorthWest(), request.getSouthEast());
+        while (iterator.hasNext()) {
+            DataProvider next = iterator.next();
+            next.validate(request.getNorthWest(), request.getSouthEast());
         }
 
+        List<GridParameterType> parameterTypes = request.getParameters().getParamTypes();
+        // find the parameter with the smallest resolution, and ask for data in that format
+        int Nx;
+        int Ny;
+        if (request.getNx() != null) {
+            Nx = request.getNx();
+            Ny = request.getNy();
+        } else {
+            Nx = firstProvider.getNx();
+            Ny = firstProvider.getNy();
+        }
         GeoCoordinate northWest = request.getNorthWest();
         GeoCoordinate southEast = request.getSouthEast();
 
-        int deltaX = (int) Math.round((southEast.getLon() - northWest.getLon()) / dx) +1;
-        int deltaY = (int) Math.round((northWest.getLat() - southEast.getLat()) / dy) +1;
+        // distance based on resolution
+        float dy = Math.abs(firstProvider.getDeltaLat() / (Ny -1));
+        float dx = Math.abs(firstProvider.getDeltaLon() / (Nx -1));
 
+        int deltaX = Math.round((southEast.getLon()- northWest.getLon()) / dx) +1;
+        int deltaY = Math.round((northWest.getLat() - southEast.getLat()) / dy) +1;
 
-        ArrayList<GridDataPoint> points = new ArrayList<>(deltaX + deltaY);
+        ArrayList<GridDataPoint> points = new ArrayList<>(deltaX * deltaY);
         for (int y= 0; y < deltaY; y++) {
             for (int x= 0; x < deltaX; x++) {
-                double lon = northWest.getLon() + x * dx;
-                double lat = southEast.getLat() + y * dy;
+                float lon = northWest.getLon() + x * dx;
+                float lat = southEast.getLat() + y * dy;
                 if (coordinateRouding != -1) {
                     lon = MathUtil.round(lon, coordinateRouding);
                     lat = MathUtil.round(lat, coordinateRouding);
@@ -142,7 +152,7 @@ public class GribFileWrapper {
         }
 
         for (GridParameterType type : parameterTypes) {
-            float[] data = dataProviders.get(type).getData(northWest, southEast, dx, dy);
+            float[] data = dataProviders.get(type).getData(northWest, southEast, Nx, Ny);
             for (int i = 0; i < points.size(); i++) {
                 GridDataPoint point = points.get(i);
                 if (data[i] != GRIB_NOT_DEFINED) {
@@ -163,8 +173,8 @@ public class GribFileWrapper {
         if (gridMetrics) {
             response.setDx(dx);
             response.setDy(dy);
-            response.setNx(deltaX);
-            response.setNy(deltaY);
+            response.setNx(Nx);
+            response.setNy(Ny);
             if (!removeEmpty) {
                 GeoCoordinate first = points.get(0).getCoordinate();
                 GeoCoordinate last = points.get(points.size() - 1).getCoordinate();
@@ -194,7 +204,5 @@ public class GribFileWrapper {
 
         return factories;
     }
-
-
 
 }

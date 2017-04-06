@@ -26,21 +26,36 @@ public interface DataProvider {
      * get the data grid from the northWest to the southEast
      * @param northWest the upper left (first data point)
      * @param southEast the lower right (last data point)
-     * @param dx the distance between longitude sample points
-     * @param dy the distance between latitude sample points
+     * @param nx the number of columns
+     * @param ny the the number of rows
      * @return a one dimensional array for the data vules in the grid
      */
-    float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, float dx, float dy);
+    float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int nx, int ny);
 
     /**
-     * The native longitude resolution of the data provided
-     * @return x resolution
+     * The number of columns modeled by this grid
+     * @return the Nx defined in the GRIB file
      */
-    float getDx();
+    int getNx();
 
     /**
-     * The native latitude resolution of data provided
-     * @return y resolution
+     * The number of rows modeled by the grid
+     * @return the Ny defined in the GRIB file
      */
-    float getDy();
+    int getNy();
+
+    /**
+     * @return the height of the grid measured in latitude distance
+     */
+    float getDeltaLat();
+
+    /**
+     * @return the width of the grid measured in longetude distance
+     */
+    float getDeltaLon();
+
+    /**
+     * Validate that the request is supported by this provider
+     */
+    void validate(GeoCoordinate northWest, GeoCoordinate southEast);
 }

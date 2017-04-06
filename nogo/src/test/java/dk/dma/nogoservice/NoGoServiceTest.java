@@ -137,7 +137,7 @@ public class NoGoServiceTest {
 
         try {
             NoGoRequest request = new NoGoRequest().setNorthWest(new GeoCoordinate(12.645173535741588, 55.64053813461296))
-                    .setSouthEast(new GeoCoordinate().setLon(12.704356943619615));
+                    .setSouthEast(new GeoCoordinate().setLon(12.70435694f));
             makeDepthRequest(request, null, "/area", NoGoResponse.class);
         } catch (HttpClientErrorException e) {
             Asserts.assertContains(e.getResponseBodyAsString(), "southEast.lat");

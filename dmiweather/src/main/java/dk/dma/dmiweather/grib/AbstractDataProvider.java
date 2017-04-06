@@ -14,60 +14,165 @@
  */
 package dk.dma.dmiweather.grib;
 
-import com.google.common.math.DoubleMath;
+import com.google.common.annotations.VisibleForTesting;
 import dk.dma.common.dto.GeoCoordinate;
-import dk.dma.common.util.MathUtil;
-import dk.dma.common.exception.ErrorMessage;
 import dk.dma.common.exception.APIException;
-import dk.dma.dmiweather.service.GribFileWrapper;
+import dk.dma.common.exception.ErrorMessage;
+import dk.dma.common.util.MathUtil;
 import lombok.Synchronized;
+import lombok.extern.slf4j.Slf4j;
 import ucar.grib.grib1.Grib1GDSVariables;
 
 import java.lang.ref.WeakReference;
+
+import static dk.dma.dmiweather.service.GribFileWrapper.GRIB_NOT_DEFINED;
 
 /**
  * Abstract class for providing data. Handles the request validation, and selecting the data points that match the request
  * subclasses provides the data.
  * This class does a simple WeakReference caching to void loading data from disk on every request
+ *
  * @author Klaus Groenbaek
  *         Created 04/04/17.
  */
+@Slf4j
 public abstract class AbstractDataProvider implements DataProvider {
-    final ParameterAndRecord parameterAndRecord;
     private final int dataRounding;
     private final float dx;
     private final float dy;
+    private final int Ny;
+    private final int Nx;
+    private final float lo1;
+    private final float la2;
+    private final float la1;
+    private final float lo2;
     private WeakReference<float[]> cachedData;  // todo consider using a GUAVA cache, and share it between all dataProviders to get LRU behaviour
 
+
     AbstractDataProvider(ParameterAndRecord parameterAndRecord, int dataRounding) {
-        this.parameterAndRecord = parameterAndRecord;
         this.dataRounding = dataRounding;
         // we have to recalculate dx, dy because the GRIB format is not precise enough (it only has two bytes, and then divides with 1000)
         Grib1GDSVariables vars = parameterAndRecord.record.getGDS().getGdsVars();
-        dy = (vars.getLa2() - vars.getLa1()) / (vars.getNy() -1);
-        dx = (vars.getLo2() - vars.getLo1()) / (vars.getNx() -1);
+        Ny = vars.getNy();
+        Nx = vars.getNx();
+        dy = (vars.getLa2() - vars.getLa1()) / (Ny - 1);
+        dx = (vars.getLo2() - vars.getLo1()) / (Nx - 1);
+        lo1 = vars.getLo1();
+        la2 = vars.getLa2();
+        la1 = vars.getLa1();
+        lo2 = vars.getLo2();
+    }
+
+    /**
+     * Test constructor allowing you to set the grid metrics directly whitout needing a grib file
+     */
+    @VisibleForTesting
+    protected AbstractDataProvider(int dataRounding, float dx, float dy, int ny, int nx, float lo1, float la2, float la1, float lo2) {
+        this.dataRounding = dataRounding;
+        this.dx = dx;
+        this.dy = dy;
+        Ny = ny;
+        Nx = nx;
+        this.lo1 = lo1;
+        this.la2 = la2;
+        this.la1 = la1;
+        this.lo2 = lo2;
     }
 
     @Override
-    public float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, float dx, float dy) {
-        Grib1GDSVariables vars = parameterAndRecord.record.getGDS().getGdsVars();
-        validate(northWest, southEast, dx, dy, vars);
+    public float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int Nx, int Ny) {
 
-        int startY = (int) Math.round((southEast.getLat() - vars.getLa1()) / this.dy);
-        int startX = (int) Math.round((northWest.getLon() - vars.getLo1()) / this.dx);
+        validate(northWest, southEast);
 
-        int deltaX = (int) Math.round((southEast.getLon() - northWest.getLon()) / this.dx) +1;
-        int deltaY = (int) Math.round((northWest.getLat() - southEast.getLat()) / this.dy) +1;
+        int startY =  Math.round((southEast.getLat() - this.la1) / this.dy);
+        int startX =  Math.round((northWest.getLon() - this.lo1) / this.dx);
 
-        float[] grid = new float[(deltaY) *(deltaX)];
+        float[] grid = new float[Ny * Nx];
+        if (this.getNx() == Nx && this.Ny == Ny) {
+            // native resolution
+            int deltaX = Math.round((southEast.getLon() - northWest.getLon()) / this.dx) + 1;
+            int deltaY = Math.round((northWest.getLat() - southEast.getLat()) / this.dy) + 1;
 
-        float[] data = roundAndCache();
-        for (int row = 0; row < deltaY; row++) {
-            System.arraycopy(data, (startY + row) * vars.getNx() + startX, grid, row*deltaX, deltaX);
+            float[] data = roundAndCache();
+            for (int row = 0; row < deltaY; row++) {
+                System.arraycopy(data, (startY + row) * this.Nx + startX, grid, row * deltaX, deltaX);
+            }
+        } else {
+            if (Nx > this.Nx || Ny >this.Ny) {
+                throw new IllegalArgumentException("Up sampling not allowed. Highest resolution should be determined before calling.");
+            }
+            // Down sample, find the distance between points
+            float dy = (this.la2 - this.la1) / (Ny);
+            float dx = (this.lo2 - this.lo1) / (Nx);
+            // this is the scaling, when sampling from 50=>10 points you pick 5,15,25,35,45
+            float yScale = dy / this.dy /2;
+            float xScale = dx / this.dx /2; // the first sample point is this far into the grid
+            float[] data = roundAndCache();
+            for (int row = 0; row < Ny; row++) {
+                int y = startY + Math.round(row * yScale*2 + yScale);
+                for (int col = 0; col < Nx; col++) {
+
+                    int x = startX + Math.round(col * xScale*2 + xScale);
+                    float datum = data[y * this.Nx + x];
+
+                    if (datum == GRIB_NOT_DEFINED) {
+                        // when we down-sample we may end up selecting only NOT_DEFINED, so we look around to see if there is a defined value close by
+                        int xSearchDistance = Math.round(xScale);
+                        int ySearchDistance = Math.round(yScale); // we search only a quarter of the distance to the next point
+
+                        float[] candidate = new float[]{this.Nx + this.Ny, GRIB_NOT_DEFINED};   // to hold the closest distance and the value
+
+                        searchRow(data, y, x, xSearchDistance, candidate);      // search this row
+
+                        for (int i = 1; i < ySearchDistance && i < candidate[0]; i++) {
+                            if (y - i > 0) {
+                                // there is a row before
+                                searchRow(data, y-i, x, xSearchDistance, candidate);
+                            } else if (y + i < this.Ny) {
+                                //there is a row after
+                                searchRow(data, y+i, x, xSearchDistance, candidate);
+                            } else {
+                                break;
+                            }
+                        }
+                        datum = candidate[1];
+                    }
+
+                    grid[row * Nx + col] = datum;
+                }
+            }
         }
 
         return grid;
     }
+
+    private void searchRow(float[] data, int y, int x, int xSearchDistance, float[] candidate) {
+        float current = data[y * this.Nx + x];
+        if (current != GRIB_NOT_DEFINED) {
+            candidate[0] = 1;   // may not actually be distance 1, but it is the closest, because this is the first point in a new row
+            candidate[1] = current;
+            return;
+        }
+        // first search the current row left then right, taking care not to run outside the grid
+        for (int i = 1; i < xSearchDistance && (i < candidate[0]); i++) {
+
+            if (x - i > 0) {
+                // we can go left
+                current = data[y * this.Nx + x - i];
+            }
+            else if (x + i < this.Nx) {
+                // we can go right
+                current = data[y * this.Nx + x + i];
+            } else {
+                break;
+            }
+            if (current != GRIB_NOT_DEFINED) {
+                candidate[0] = i;           // distance
+                candidate[1] = current;     // value
+            }
+        }
+    }
+
 
     @Synchronized
     private float[] roundAndCache() {
@@ -90,7 +195,7 @@ public abstract class AbstractDataProvider implements DataProvider {
         float[] data = getData();
         if (dataRounding != -1) {
             for (int i = 0; i < data.length; i++) {
-                if (data[i] != GribFileWrapper.GRIB_NOT_DEFINED) {
+                if (data[i] != GRIB_NOT_DEFINED) {
                     data[i] = MathUtil.round(data[i], dataRounding);
                 }
             }
@@ -101,20 +206,30 @@ public abstract class AbstractDataProvider implements DataProvider {
     public abstract float[] getData();
 
     @Override
-    public float getDx() {
-        return dx;
+    public int getNx() {
+        return Nx;
     }
 
     @Override
-    public float getDy() {
-        return dy;
+    public int getNy() {
+        return Ny;
     }
 
-    private void validate(GeoCoordinate northWest, GeoCoordinate southEast, double dx, double dy, Grib1GDSVariables vars) {
+    @Override
+    public float getDeltaLat() {
+        return la2-la1;
+    }
 
-        if (northWest.getLon() < vars.getLo1() || northWest.getLat() > vars.getLa2() || southEast.getLon() > vars.getLo2() || southEast.getLat() < vars.getLa1()) {
+    @Override
+    public float getDeltaLon() {
+        return lo2-lo1;
+    }
+
+    @Override
+    public void validate(GeoCoordinate northWest, GeoCoordinate southEast) {
+        if (northWest.getLon() < lo1 || northWest.getLat() > la2 || southEast.getLon() > lo2 || southEast.getLat() < la1) {
             throw new APIException(ErrorMessage.OUTSIDE_GRID, String.format("Query is outside data grid, grid corners northWest:(%s), southEast:(%s)",
-                    new GeoCoordinate(vars.getLo1(), vars.getLa1()), new GeoCoordinate(vars.getLo2(), vars.getLa2())));
+                    new GeoCoordinate(lo1, la1), new GeoCoordinate(lo2, la2)));
         }
 
         if (northWest.getLon() > southEast.getLon()) {
@@ -122,13 +237,6 @@ public abstract class AbstractDataProvider implements DataProvider {
         }
         if (northWest.getLat() < southEast.getLat()) {
             throw new APIException(ErrorMessage.INVALID_GRID_LAT);
-        }
-
-        int resolutionX = DoubleMath.fuzzyCompare(this.dx, dx, 0.000001);
-        int resolutionY = DoubleMath.fuzzyCompare(this.dy, dy, 0.000001);
-
-        if (resolutionX != 0 || resolutionY != 0) {
-            throw new IllegalArgumentException(String.format("Currently only request with the same resolution as the data is supported dx:%f dy:%f", this.dx, this.dy));
         }
     }
 }

@@ -30,6 +30,8 @@ import java.io.InputStream;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -83,6 +85,30 @@ public class GridWeatherServiceTest {
     }
 
     @Test
+    public void allDataSampled() throws Exception {
+
+        int nx = 20;
+        int ny = 30;
+        GridResponse response = makeRequest(r-> r.setNorthWest(new GeoCoordinate(9.0, 57.5))
+                .setSouthEast(new GeoCoordinate(15.0, 53.0)).setNx(nx).setNy(ny).getParameters().setSeaLevel(true), false);
+
+        assertEquals("Number of dataPoints", nx * ny, response.getPoints().size());
+
+        List<GridDataPoint> found = new ArrayList<>();
+        for (GridDataPoint dataPoint : response.getPoints()) {
+            if (dataPoint.getSeaLevel() != null && dataPoint.getWindDirection() != null && dataPoint.getWindSpeed() != null) {
+                found.add(dataPoint);
+
+            }
+        }
+        assertTrue("Did not find a data point with all requested values", !found.isEmpty());
+
+        //todo check the distance between points
+    }
+
+
+
+    @Test
     public void tooFarWest() throws Exception {
         outsideGrid(r -> r.setNorthWest(new GeoCoordinate(8.0, 57.5))
                 .setSouthEast(new GeoCoordinate(15.0, 53.0)));
@@ -107,7 +133,7 @@ public class GridWeatherServiceTest {
     }
 
     @Test
-    public void wrongData() throws Exception {
+    public void beforeFirstForcast() throws Exception {
         try {
             makeRequest(r->r.setTime(r.getTime().minus(3, ChronoUnit.DAYS)), true);
             fail("Should throw exception.");
@@ -174,7 +200,7 @@ public class GridWeatherServiceTest {
     private void check(CoordinateConfigurer configurer, String resultFile) throws IOException {
         GridResponse response = makeRequest(configurer, false);
 
-        //log.info(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(response));
+        //log.info(new ObjectMapper().registerModule(new JavaTimeModule()).writerWithDefaultPrettyPrinter().writeValueAsString(response));
 
         ClassPathResource json = new ClassPathResource(resultFile, getClass());
         try (InputStream inputStream = json.getInputStream()) {

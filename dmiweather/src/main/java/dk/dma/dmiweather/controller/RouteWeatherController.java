@@ -73,7 +73,7 @@ public class RouteWeatherController {
                 BigDecimal lon = waypoint.getPosition().getLon();
                 BigDecimal lat = waypoint.getPosition().getLat();
                 GridRequest request = new GridRequest();
-                GeoCoordinate geoCoordinate = new GeoCoordinate(lon.doubleValue(), lat.doubleValue());
+                GeoCoordinate geoCoordinate = new GeoCoordinate(lon.floatValue(), lat.floatValue());
                 request.setNorthWest(geoCoordinate).setSouthEast(geoCoordinate);
                 ScheduleElement element = scheduleElements.get(i);
                 XMLGregorianCalendar eta = element.getEta();

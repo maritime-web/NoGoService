@@ -28,10 +28,12 @@ import java.io.IOException;
 @SuppressFBWarnings("EI_EXPOSE_REP2")
 public class SimpleDataProvider extends AbstractDataProvider {
 
+    private final ParameterAndRecord parameterAndRecord;
     private final Grib1Data grib1Data;
 
     SimpleDataProvider(ParameterAndRecord parameterAndRecord, Grib1Data grib1Data, int dataRounding) {
         super(parameterAndRecord, dataRounding);
+        this.parameterAndRecord = parameterAndRecord;
         this.grib1Data = grib1Data;
     }
 
