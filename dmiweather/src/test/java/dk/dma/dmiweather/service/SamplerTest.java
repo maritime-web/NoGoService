@@ -2,10 +2,14 @@ package dk.dma.dmiweather.service;
 
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.dmiweather.grib.AbstractDataProvider;
-import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static dk.dma.dmiweather.service.GribFileWrapper.GRIB_NOT_DEFINED;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * @author Klaus Groenbaek
@@ -19,12 +23,12 @@ public class SamplerTest {
     @Test
     public void sixBySix() {
 
-        AbstractDataProvider dataProvider = createGrid();
+        AbstractDataProvider dataProvider = createGrid(12);
 
 
-        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 12), new GeoCoordinate(12, 0), 6, 6);
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 11), new GeoCoordinate(11, 0), 6, 6);
         for (float v : sampled) {
-            assertNotEquals(v, GribFileWrapper.GRIB_NOT_DEFINED, 0.0000001);
+            assertNotEquals(v, GRIB_NOT_DEFINED, 0.0000001);
         }
     }
 
@@ -34,30 +38,90 @@ public class SamplerTest {
      */
     @Test
     public void fourByFour() {
-        AbstractDataProvider dataProvider = createGrid();
+        AbstractDataProvider dataProvider = createGrid(12);
 
-        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 12), new GeoCoordinate(12, 0), 4, 4);
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 11), new GeoCoordinate(11, 0), 4, 4);
         for (float v : sampled) {
-            assertNotEquals(v, GribFileWrapper.GRIB_NOT_DEFINED, 0.0000001);
+            assertNotEquals(v, GRIB_NOT_DEFINED, 0.0000001);
         }
     }
 
+    @Test
+    public void subGridFourByFour() {
+        AbstractDataProvider dataProvider = createGrid(12);
 
-    private AbstractDataProvider createGrid() {
-        float[] data = new float[144];
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 7), new GeoCoordinate(7, 0), 4, 4);
+        for (float v : sampled) {
+            assertNotEquals(v, GRIB_NOT_DEFINED, 0.0000001);
+        }
+
+    }
+
+    /**
+     * We take an 9x9 of a 12x12 grid, and down sample to 5x5.
+     * Sampling 9 to 5 should give us 0,2,4,6,8 with spacing 2
+     */
+    @Test
+    public void subGridFiveByFive() {
+        AbstractDataProvider dataProvider = createGrid(12);
+
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 8), new GeoCoordinate(8, 0), 5, 5);
+        for (float v : sampled) {
+            assertNotEquals(v, GRIB_NOT_DEFINED, 0.0000001);
+        }
+
+    }
+
+    /**
+     * 2x2 up to 4x4
+     */
+    @Test
+    public void upToFourByFour() {
+        List<Float> found = upSampling(4);
+        assertEquals("The (1,1) point should have a value and when upscaled it should be there four times", 4, found.size());
+
+    }
+
+    /**
+     * 2x2 up to 6x6
+     */
+    @Test
+    public void upToSixBySix() {
+        List<Float> found = upSampling(6);
+        assertEquals("The (1,1) point should have a value and when upscaled it should be there four times", 9, found.size());
+    }
+
+    private List<Float> upSampling(int size) {
+        AbstractDataProvider dataProvider = createGrid(2);
+
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 1), new GeoCoordinate(1, 0), size, size);
+        int expected = size * size;
+        assertEquals("length", expected, sampled.length);
+        List<Float> found = new ArrayList<>();
+        for (float v : sampled) {
+            if (v != GRIB_NOT_DEFINED) {
+                found.add(v);
+            }
+        }
+        return found;
+    }
+
+
+    private AbstractDataProvider createGrid(final int size) {
+        float[] data = new float[size*size];
         for (int i = 0; i < data.length; i++) {
-            int row = i / 12;
-            int col = i % 12;
+            int row = i / size;
+            int col = i % size;
             if ( row%2 != 0 && col%2 != 0){
                 // add a value the expected sample points
                 data[i] = i;
             }
             else {
-                data[i] = GribFileWrapper.GRIB_NOT_DEFINED;
+                data[i] = GRIB_NOT_DEFINED;
             }
         }
 
-        return new AbstractDataProvider(5, 1, 1, 12, 12, 0, 12, 0, 12) {
+        return new AbstractDataProvider(5, 1, 1, size, size, 0, size-1, 0, size-1) {
             @Override
             public float[] getData() {
                 return data;

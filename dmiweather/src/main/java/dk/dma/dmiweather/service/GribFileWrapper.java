@@ -30,9 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Klaus Groenbaek
@@ -53,6 +51,10 @@ public class GribFileWrapper {
     private final ImmutableMap<GridParameterType, DataProvider> dataProviders;
     private final int dataRounding;
     private final int coordinateRouding;
+    private float dx;
+    private float dy;
+    private int nx;
+    private int ny;
 
     GribFileWrapper(Instant date, File file, int dataRounding, int coordinateRouding) {
         this.date = date;
@@ -103,6 +105,12 @@ public class GribFileWrapper {
         } catch (IOException | NoValidGribException e) {
             throw new RuntimeException("Unable to load GRIB file", e);
         }
+        // we assume that all GRIB data series have the same resolution (which is true for the files we have seen from DMI)
+        DataProvider firstProvider = map.values().iterator().next();
+        dx = firstProvider.getDx();
+        dy = firstProvider.getDy();
+        nx = firstProvider.getNx();
+        ny = firstProvider.getNy();
 
         return ImmutableMap.copyOf(map);
     }
@@ -131,12 +139,24 @@ public class GribFileWrapper {
         GeoCoordinate northWest = request.getNorthWest();
         GeoCoordinate southEast = request.getSouthEast();
 
+        // calculate how many point request covers in native resolution
+        float lonDistance = southEast.getLon() - northWest.getLon();
+        float latDistance = northWest.getLat() - southEast.getLat();
+
+        int deltaX = Math.round(lonDistance / firstProvider.getDx()) +1;
+        int deltaY = Math.round(latDistance / firstProvider.getDy()) +1;
+        if (deltaX < Nx || deltaY < Ny) {
+            // if we have selected a higher resolution than the native one, we use the native resolution
+            Nx = deltaX;
+            Ny = deltaY;
+        }
+
         // distance based on resolution
         float dy = Math.abs(firstProvider.getDeltaLat() / (Ny -1));
         float dx = Math.abs(firstProvider.getDeltaLon() / (Nx -1));
 
-        int deltaX = Math.round((southEast.getLon()- northWest.getLon()) / dx) +1;
-        int deltaY = Math.round((northWest.getLat() - southEast.getLat()) / dy) +1;
+        deltaX = Math.round(lonDistance / dx) +1;
+        deltaY = Math.round(latDistance / dy) +1;
 
         ArrayList<GridDataPoint> points = new ArrayList<>(deltaX * deltaY);
         for (int y= 0; y < deltaY; y++) {

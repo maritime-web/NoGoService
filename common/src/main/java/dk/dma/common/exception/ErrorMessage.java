@@ -31,6 +31,7 @@ public enum ErrorMessage {
     OUT_OF_DATE_RANGE(404, 1002, "No data in the requested range."),
     NO_PARAMETERS(400, 1003, "You must specify at least one parameter (wind, wave, seaLevel, current, density) on the URL"),
     INVALID_RTZ(400, 1004, "The provided RTZ is not valid."),
+    INVALID_SCALING(400, 1005, "Can't scale one axis up and another axis down"),
 
     // general user input errors
     REQUEST_NOT_PARSED(400, 2005, "Could not parse request."),

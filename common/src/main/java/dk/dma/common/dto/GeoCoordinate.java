@@ -43,6 +43,16 @@ public class GeoCoordinate {
         this.lat = (float) lat;
     }
 
+    public GeoCoordinate setLon(double lon) {
+        this.lon = (float) lon;
+        return this;
+    }
+
+    public GeoCoordinate setLat(double lat) {
+        this.lat = (float) lat;
+        return this;
+    }
+
     public String toWKT() {
         return lon + " " + lat;
     }

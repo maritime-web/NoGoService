@@ -17,9 +17,9 @@ package dk.dma.dmiweather.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.Lists;
-import dk.dma.common.exception.ErrorMessage;
-import dk.dma.common.exception.APIException;
 import dk.dma.common.dto.GeoCoordinate;
+import dk.dma.common.exception.APIException;
+import dk.dma.common.exception.ErrorMessage;
 import dk.dma.dmiweather.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -101,9 +101,7 @@ public class GridWeatherServiceTest {
 
             }
         }
-        assertTrue("Did not find a data point with all requested values", !found.isEmpty());
-
-        //todo check the distance between points
+        assertEquals("Number of found data values after sampling", 196, found.size());
     }
 
 

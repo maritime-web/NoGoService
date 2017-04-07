@@ -54,6 +54,11 @@ public interface DataProvider {
      */
     float getDeltaLon();
 
+
+    float getDx();
+
+    float getDy();
+
     /**
      * Validate that the request is supported by this provider
      */

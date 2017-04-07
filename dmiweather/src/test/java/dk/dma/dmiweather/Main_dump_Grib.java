@@ -35,7 +35,7 @@ public class Main_dump_Grib {
     public static void main(String[] args) throws Exception {
 
 
-        File tempFile = new File("c:/code/NoGoService/dmiweather/DMI_waves_Atl.2017040606.grb");
+        File tempFile = new File("/Users/kg/work/NoGoService/DMI_waves_DK.2017033000.grb");
         //File tempFile = new File("/Users/kg/work/NoGoService/DMI_waves_DK.2017033000.grb");
         RandomAccessFile raf = new RandomAccessFile(tempFile.getAbsolutePath(), "r");
         raf.order(RandomAccessFile.BIG_ENDIAN);

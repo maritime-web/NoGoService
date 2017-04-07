@@ -15,6 +15,7 @@
 package dk.dma.dmiweather.grib;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.math.DoubleMath;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.exception.APIException;
 import dk.dma.common.exception.ErrorMessage;
@@ -84,61 +85,104 @@ public abstract class AbstractDataProvider implements DataProvider {
 
         validate(northWest, southEast);
 
-        int startY =  Math.round((southEast.getLat() - this.la1) / this.dy);
-        int startX =  Math.round((northWest.getLon() - this.lo1) / this.dx);
+        int startY = Math.round((southEast.getLat() - this.la1) / this.dy);
+        int startX = Math.round((northWest.getLon() - this.lo1) / this.dx);
 
         float[] grid = new float[Ny * Nx];
+        float lonDistance = southEast.getLon() - northWest.getLon();
+        float latDistance = northWest.getLat() - southEast.getLat();
         if (this.getNx() == Nx && this.Ny == Ny) {
             // native resolution
-            int deltaX = Math.round((southEast.getLon() - northWest.getLon()) / this.dx) + 1;
-            int deltaY = Math.round((northWest.getLat() - southEast.getLat()) / this.dy) + 1;
+            int deltaX = Math.round(lonDistance / this.dx) + 1;
+            int deltaY = Math.round(latDistance / this.dy) + 1;
 
             float[] data = roundAndCache();
             for (int row = 0; row < deltaY; row++) {
                 System.arraycopy(data, (startY + row) * this.Nx + startX, grid, row * deltaX, deltaX);
             }
         } else {
-            if (Nx > this.Nx || Ny >this.Ny) {
-                throw new IllegalArgumentException("Up sampling not allowed. Highest resolution should be determined before calling.");
+            if (Nx > this.Nx && Ny < this.Ny || Ny > this.Ny && Nx < this.Nx) {
+                throw new APIException(ErrorMessage.INVALID_SCALING, String.format("Native Nx:%s, Ny:%s, desired Nx:%s, Ny:%s", this.Nx, this.Ny, Nx, Ny));
             }
-            // Down sample, find the distance between points
-            float dy = (this.la2 - this.la1) / (Ny);
-            float dx = (this.lo2 - this.lo1) / (Nx);
-            // this is the scaling, when sampling from 50=>10 points you pick 5,15,25,35,45
-            float yScale = dy / this.dy /2;
-            float xScale = dx / this.dx /2; // the first sample point is this far into the grid
-            float[] data = roundAndCache();
-            for (int row = 0; row < Ny; row++) {
-                int y = startY + Math.round(row * yScale*2 + yScale);
-                for (int col = 0; col < Nx; col++) {
 
-                    int x = startX + Math.round(col * xScale*2 + xScale);
-                    float datum = data[y * this.Nx + x];
+            if (Nx > this.Nx) {
+                // scaling up
+                float lonSpacing = (lonDistance + this.dx) / Nx;
+                float latSpacing = (latDistance + this.dy) / Ny;
+                float lonOffset = -0.00001f;
+                float latOffset = -0.00001f;
+                float[] data = roundAndCache();
+                for (int row = 0; row < Ny; row++) {
+                    int y = startY + (int) Math.round(Math.floor(row * latSpacing - latOffset));
+                    for (int col = 0; col < Nx; col++) {
+                        int x = startX + (int) Math.round(Math.floor(col * lonSpacing - lonOffset));
 
-                    if (datum == GRIB_NOT_DEFINED) {
-                        // when we down-sample we may end up selecting only NOT_DEFINED, so we look around to see if there is a defined value close by
-                        int xSearchDistance = Math.round(xScale);
-                        int ySearchDistance = Math.round(yScale); // we search only a quarter of the distance to the next point
-
-                        float[] candidate = new float[]{this.Nx + this.Ny, GRIB_NOT_DEFINED};   // to hold the closest distance and the value
-
-                        searchRow(data, y, x, xSearchDistance, candidate);      // search this row
-
-                        for (int i = 1; i < ySearchDistance && i < candidate[0]; i++) {
-                            if (y - i > 0) {
-                                // there is a row before
-                                searchRow(data, y-i, x, xSearchDistance, candidate);
-                            } else if (y + i < this.Ny) {
-                                //there is a row after
-                                searchRow(data, y+i, x, xSearchDistance, candidate);
-                            } else {
-                                break;
-                            }
-                        }
-                        datum = candidate[1];
+                        float datum = data[y * this.Nx + x];
+                        grid[row * Nx + col] = datum;
                     }
+                }
 
-                    grid[row * Nx + col] = datum;
+            } else {
+
+                // calculate the spacing between points and the offset to the first point, there is a special case if a point in the first and
+                // last column/row can be used, this is the 9 to 5 down sampling
+                float latSpacing = (latDistance + this.dy) / Ny;
+                float latRemainder = latDistance % (Ny - 1);
+                float latOffset;
+
+                if (DoubleMath.fuzzyEquals(latRemainder, 0, 0.00001)) {
+                    // this is the 9 to 5 case, where we use 0,2,4,6,8 with a spacing of 2
+                    latOffset = 0;
+                    latSpacing = latDistance / (Ny - 1);
+                } else {
+                    latOffset = latDistance % (Ny - 1);
+                }
+
+                float lonSpacing = (lonDistance + this.dx) / Nx;
+                float lonRemainder = lonDistance % (Nx - 1);
+                float lonOffset;
+
+                if (DoubleMath.fuzzyEquals(lonRemainder, 0, 0.00001)) {
+                    lonOffset = 0;
+                    lonSpacing = lonDistance / (Nx - 1);
+                } else {
+                    lonOffset = lonDistance % (Nx - 1);
+                }
+
+                float[] data = roundAndCache();
+
+                for (int row = 0; row < Ny; row++) {
+                    int y = startY + Math.round(row * latSpacing/this.dy + latOffset);
+                    for (int col = 0; col < Nx; col++) {
+
+                        int x = startX + Math.round(col * lonSpacing/this.dx + lonOffset);
+                        float datum = data[y * this.Nx + x];
+
+                        if (datum == GRIB_NOT_DEFINED) {
+                            // when we down-sample we may end up selecting only NOT_DEFINED, so we look around to see if there is a defined value close by
+                            int xSearchDistance = Math.round(lonSpacing / 2);
+                            int ySearchDistance = Math.round(latSpacing / 2); // we search the space between points
+
+                            float[] candidate = new float[]{this.Nx + this.Ny, GRIB_NOT_DEFINED};   // to hold the closest distance and the value
+
+                            searchRow(data, y, x, xSearchDistance, candidate);      // search this row
+
+                            for (int i = 1; i <= ySearchDistance && i < candidate[0]; i++) {
+                                if (y - i > 0) {
+                                    // there is a row before
+                                    searchRow(data, y - i, x, xSearchDistance, candidate);
+                                } else if (y + i < this.Ny) {
+                                    //there is a row after
+                                    searchRow(data, y + i, x, xSearchDistance, candidate);
+                                } else {
+                                    break;
+                                }
+                            }
+                            datum = candidate[1];
+                        }
+
+                        grid[row * Nx + col] = datum;
+                    }
                 }
             }
         }
@@ -154,13 +198,12 @@ public abstract class AbstractDataProvider implements DataProvider {
             return;
         }
         // first search the current row left then right, taking care not to run outside the grid
-        for (int i = 1; i < xSearchDistance && (i < candidate[0]); i++) {
+        for (int i = 1; i <= xSearchDistance && i < candidate[0]; i++) {
 
             if (x - i > 0) {
                 // we can go left
                 current = data[y * this.Nx + x - i];
-            }
-            else if (x + i < this.Nx) {
+            } else if (x + i < this.Nx) {
                 // we can go right
                 current = data[y * this.Nx + x + i];
             } else {
@@ -217,12 +260,22 @@ public abstract class AbstractDataProvider implements DataProvider {
 
     @Override
     public float getDeltaLat() {
-        return la2-la1;
+        return la2 - la1;
     }
 
     @Override
     public float getDeltaLon() {
-        return lo2-lo1;
+        return lo2 - lo1;
+    }
+
+    @Override
+    public float getDx() {
+        return dx;
+    }
+
+    @Override
+    public float getDy() {
+        return dy;
     }
 
     @Override
