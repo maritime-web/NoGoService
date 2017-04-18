@@ -21,9 +21,7 @@ import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 import dk.dma.common.dto.JSonWarning;
 import dk.dma.common.dto.JsonErrorException;
-import dk.dma.dmiweather.dto.GridParameters;
-import dk.dma.dmiweather.dto.GridRequest;
-import dk.dma.dmiweather.dto.GridResponse;
+import dk.dma.dmiweather.dto.*;
 import dk.dma.nogoservice.algo.NoGoMatcher;
 import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.entity.SouthKattegat;
@@ -114,10 +112,10 @@ public class SouthKattegatQueryArea implements QueryArea {
         // accurate, which would cause a jagged grid, making further operations harder
         QueryBoundary boundary = em.createQuery("select new dk.dma.nogoservice.dto.QueryBoundary(min(s.n), max(s.n), min(s.m), max(s.m)) " +
                 "from SouthKattegat s where s.lon > :west and s.lon < :east and s.lat > :south and s.lat < :north", QueryBoundary.class)
-                .setParameter("west", request.getNorthWest().getLon())
-                .setParameter("east", request.getSouthEast().getLon())
-                .setParameter("south", request.getSouthEast().getLat())
-                .setParameter("north", request.getNorthWest().getLat())
+                .setParameter("west", (double) request.getNorthWest().getLon())
+                .setParameter("east",  (double) request.getSouthEast().getLon())
+                .setParameter("south", (double) request.getSouthEast().getLat())
+                .setParameter("north", (double) request.getNorthWest().getLat())
                 .getSingleResult();
 
 
