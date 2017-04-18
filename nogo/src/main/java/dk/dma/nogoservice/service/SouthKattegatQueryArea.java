@@ -22,12 +22,14 @@ import com.vividsolutions.jts.io.WKTReader;
 import dk.dma.common.dto.JSonWarning;
 import dk.dma.common.dto.JsonErrorException;
 import dk.dma.dmiweather.dto.*;
+import dk.dma.nogoservice.ApiProfiles;
 import dk.dma.nogoservice.algo.NoGoMatcher;
 import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.entity.SouthKattegat;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
@@ -44,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *         Created 13/03/17.
  */
 @Component
+@Profile(ApiProfiles.PRODUCTION)
 @Slf4j
 public class SouthKattegatQueryArea implements QueryArea {
 
@@ -67,6 +70,8 @@ public class SouthKattegatQueryArea implements QueryArea {
     public SouthKattegatQueryArea(NoGoAlgorithmFacade noGoAlgorithm, WeatherService weatherService) {
         this.noGoAlgorithm = noGoAlgorithm;
         this.weatherService = weatherService;
+
+
         WKTReader reader = new WKTReader();
         sydKattegat = reader.read("POLYGON((9.419409 54.36294,  13.149009 54.36294, 13.149009 56.36316, 9.419409 56.36316, 9.419409 54.36294))");
 
