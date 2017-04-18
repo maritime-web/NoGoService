@@ -28,9 +28,13 @@ public interface DataProvider {
      * @param southEast the lower right (last data point)
      * @param nx the number of columns
      * @param ny the the number of rows
+     * @param lonSpacing the spacing between points on the x-axis
+     * @param lonOffset the offset before the first point on the x-axis
+     * @param latSpacing the spacing between points on the y-axis
+     * @param latOffset the offset before the first point on the y-axis
      * @return a one dimensional array for the data vules in the grid
      */
-    float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int nx, int ny);
+    float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int nx, int ny, float lonSpacing, float lonOffset, float latSpacing, float latOffset);
 
     /**
      * The number of columns modeled by this grid
@@ -43,17 +47,6 @@ public interface DataProvider {
      * @return the Ny defined in the GRIB file
      */
     int getNy();
-
-    /**
-     * @return the height of the grid measured in latitude distance
-     */
-    float getDeltaLat();
-
-    /**
-     * @return the width of the grid measured in longetude distance
-     */
-    float getDeltaLon();
-
 
     float getDx();
 

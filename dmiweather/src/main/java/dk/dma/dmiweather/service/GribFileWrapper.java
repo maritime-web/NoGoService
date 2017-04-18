@@ -15,7 +15,7 @@
 package dk.dma.dmiweather.service;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.UnmodifiableIterator;
+import com.google.common.math.DoubleMath;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.dto.JSonWarning;
 import dk.dma.common.util.MathUtil;
@@ -29,7 +29,6 @@ import ucar.unidata.io.RandomAccessFile;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -39,7 +38,6 @@ import java.util.*;
 public class GribFileWrapper {
 
     public static final float GRIB_NOT_DEFINED = -9999;     // Grib1BinaryDataSection.UNDEFINED
-    private static final ZoneId UTC = ZoneId.of("UTC");
     private static final int MERIDIONAL_WIND = 33;
     private static final int ZONAL_WIND = 34;
     private static final int MERIDIONAL_CURRENT = 49;
@@ -53,14 +51,24 @@ public class GribFileWrapper {
     private final int coordinateRouding;
     private float dx;
     private float dy;
-    private int nx;
-    private int ny;
 
     GribFileWrapper(Instant date, File file, int dataRounding, int coordinateRouding) {
         this.date = date;
         this.dataRounding = dataRounding;
         this.coordinateRouding = coordinateRouding;
         dataProviders = ImmutableMap.copyOf(initProviders(file));
+
+        float smallestDx = Float.MAX_VALUE;
+        DataProvider found = null;
+        for (DataProvider dataProvider : dataProviders.values()) {
+            if (dataProvider.getDx()  < smallestDx ) {
+                smallestDx = dataProvider.getDx();
+                found = dataProvider;
+            }
+        }
+
+        dx = found.getDx();
+        dy = found.getDy();
     }
 
     /**
@@ -68,7 +76,7 @@ public class GribFileWrapper {
      * @return an Immutable map of providers
      * @param file the GRIB file
      */
-    private ImmutableMap<GridParameterType, DataProvider> initProviders(File file) {
+    private Map<GridParameterType, DataProvider> initProviders(File file) {
         HashMap<GridParameterType, DataProvider> map = new HashMap<>();
 
         try {
@@ -105,62 +113,75 @@ public class GribFileWrapper {
         } catch (IOException | NoValidGribException e) {
             throw new RuntimeException("Unable to load GRIB file", e);
         }
-        // we assume that all GRIB data series have the same resolution (which is true for the files we have seen from DMI)
-        DataProvider firstProvider = map.values().iterator().next();
-        dx = firstProvider.getDx();
-        dy = firstProvider.getDy();
-        nx = firstProvider.getNx();
-        ny = firstProvider.getNy();
-
-        return ImmutableMap.copyOf(map);
+        return map;
     }
 
     GridResponse getData(GridRequest request, boolean removeEmpty, boolean gridMetrics)  {
 
-        UnmodifiableIterator<DataProvider> iterator = dataProviders.values().iterator();
-        DataProvider firstProvider = iterator.next();
-        firstProvider.validate(request.getNorthWest(), request.getSouthEast());
-        while (iterator.hasNext()) {
-            DataProvider next = iterator.next();
-            next.validate(request.getNorthWest(), request.getSouthEast());
-        }
-
-        List<GridParameterType> parameterTypes = request.getParameters().getParamTypes();
-        // find the parameter with the smallest resolution, and ask for data in that format
-        int Nx;
-        int Ny;
-        if (request.getNx() != null) {
-            Nx = request.getNx();
-            Ny = request.getNy();
-        } else {
-            Nx = firstProvider.getNx();
-            Ny = firstProvider.getNy();
-        }
         GeoCoordinate northWest = request.getNorthWest();
         GeoCoordinate southEast = request.getSouthEast();
 
-        // calculate how many point request covers in native resolution
-        float lonDistance = southEast.getLon() - northWest.getLon();
-        float latDistance = northWest.getLat() - southEast.getLat();
-
-        int deltaX = Math.round(lonDistance / firstProvider.getDx()) +1;
-        int deltaY = Math.round(latDistance / firstProvider.getDy()) +1;
-        if (deltaX < Nx || deltaY < Ny) {
-            // if we have selected a higher resolution than the native one, we use the native resolution
-            Nx = deltaX;
-            Ny = deltaY;
+        for (DataProvider next : dataProviders.values()) {
+            next.validate(northWest, southEast);
         }
 
-        // distance based on resolution
-        float dy = Math.abs(firstProvider.getDeltaLat() / (Ny -1));
-        float dx = Math.abs(firstProvider.getDeltaLon() / (Nx -1));
+        List<GridParameterType> parameterTypes = request.getParameters().getParamTypes();
 
-        deltaX = Math.round(lonDistance / dx) +1;
-        deltaY = Math.round(latDistance / dy) +1;
+        // If there is no scaling information, we use the native resolution, if scaling info (Nx,Ny) is provided we use it calculate lat/lon spacing and lat/lon offset
+        // so we can generate the sampled coordinates
+        float lonDistance = southEast.getLon() - northWest.getLon();
+        float latDistance = northWest.getLat() - southEast.getLat();
+        int nativeNx = Math.round(lonDistance / dx) +1;
+        int nativeNy = Math.round(latDistance / dy) +1;
+        int Nx, Ny;
+        float latSpacing, latOffset;
+        float lonSpacing, lonOffset;
+        if (request.getNx() == null) {
+            // use resolution of the smallest data series
+            Nx = nativeNx;
+            Ny = nativeNy;
+            latOffset = 0;
+            lonOffset = 0;
+            lonSpacing = dx;
+            latSpacing = dy;
+        } else {
+            // if the desired Nx, Ny is higher than the native resolution, we default to the native resolution
 
-        ArrayList<GridDataPoint> points = new ArrayList<>(deltaX * deltaY);
-        for (int y= 0; y < deltaY; y++) {
-            for (int x= 0; x < deltaX; x++) {
+            if (nativeNx < request.getNx() || nativeNy < request.getNy()) {
+                Nx = nativeNx;
+                Ny = nativeNy;
+            } else {
+                Nx = request.getNx();
+                Ny = request.getNy();
+            }
+
+            // calculate the spacing between points and the offset to the first point, there is a special case if a point in the first and
+            // last column/row can be used, this is the 9 to 5 down sampling
+            latSpacing = (latDistance + this.dy) / Ny;
+            float latRemainder = latDistance % (Ny - 1);
+
+            if (DoubleMath.fuzzyEquals(latRemainder, 0, 0.00001)) {
+                // this is the 9 to 5 case, where we use 0,2,4,6,8 with a spacing of 2
+                latOffset = 0;
+                latSpacing = latDistance / (Ny - 1);
+            } else {
+                latOffset = (latDistance % (Ny - 1)) / 2; // the leftover should be split in two for padding on either side
+            }
+
+            lonSpacing = (lonDistance + this.dx) / Nx;
+            float lonRemainder = lonDistance % (Nx - 1);
+
+            if (DoubleMath.fuzzyEquals(lonRemainder, 0, 0.00001)) {
+                lonOffset = 0;
+                lonSpacing = lonDistance / (Nx - 1);
+            } else {
+                lonOffset = (lonDistance % (Nx - 1)) / 2;
+            }
+        }
+
+        ArrayList<GridDataPoint> points = new ArrayList<>(Nx * Ny);
+        for (int y = 0; y < Ny; y++) {
+            for (int x = 0; x < Nx; x++) {
                 float lon = northWest.getLon() + x * dx;
                 float lat = southEast.getLat() + y * dy;
                 if (coordinateRouding != -1) {
@@ -172,7 +193,7 @@ public class GribFileWrapper {
         }
 
         for (GridParameterType type : parameterTypes) {
-            float[] data = dataProviders.get(type).getData(northWest, southEast, Nx, Ny);
+            float[] data = dataProviders.get(type).getData(northWest, southEast, Nx, Ny, lonSpacing, lonOffset, latSpacing, latOffset);
             for (int i = 0; i < points.size(); i++) {
                 GridDataPoint point = points.get(i);
                 if (data[i] != GRIB_NOT_DEFINED) {
@@ -191,8 +212,8 @@ public class GribFileWrapper {
             response.setWarning(new JSonWarning().setId(msg.getId()).setMessage(msg.getMessage()).setDetails("Wave information is currently not provided."));
         }
         if (gridMetrics) {
-            response.setDx(dx);
-            response.setDy(dy);
+            response.setDx(lonSpacing);
+            response.setDy(latSpacing);
             response.setNx(Nx);
             response.setNy(Ny);
             if (!removeEmpty) {

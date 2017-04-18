@@ -29,7 +29,6 @@ class TidalQueryObject {
 
     TidalQueryObject(GridResponse response) {
         this.response = response;
-
     }
 
     float getTidalHeight(GeoCoordinateProvider coordinateProvider) {

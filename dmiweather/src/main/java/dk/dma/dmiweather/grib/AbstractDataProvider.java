@@ -81,7 +81,7 @@ public abstract class AbstractDataProvider implements DataProvider {
     }
 
     @Override
-    public float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int Nx, int Ny) {
+    public float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int Nx, int Ny, float lonSpacing, float lonOffset, float latSpacing, float latOffset) {
 
         validate(northWest, southEast);
 
@@ -89,16 +89,13 @@ public abstract class AbstractDataProvider implements DataProvider {
         int startX = Math.round((northWest.getLon() - this.lo1) / this.dx);
 
         float[] grid = new float[Ny * Nx];
-        float lonDistance = southEast.getLon() - northWest.getLon();
-        float latDistance = northWest.getLat() - southEast.getLat();
-        if (this.getNx() == Nx && this.Ny == Ny) {
-            // native resolution
-            int deltaX = Math.round(lonDistance / this.dx) + 1;
-            int deltaY = Math.round(latDistance / this.dy) + 1;
 
+        double tolerance = 0.00001;
+        if (DoubleMath.fuzzyEquals(this.dx, lonSpacing, tolerance) && DoubleMath.fuzzyEquals(this.dy, latSpacing, tolerance)) {
+            // native resolution
             float[] data = roundAndCache();
-            for (int row = 0; row < deltaY; row++) {
-                System.arraycopy(data, (startY + row) * this.Nx + startX, grid, row * deltaX, deltaX);
+            for (int row = 0; row < Ny; row++) {
+                System.arraycopy(data, (startY + row) * this.Nx + startX, grid, row * Nx, Nx);
             }
         } else {
             if (Nx > this.Nx && Ny < this.Ny || Ny > this.Ny && Nx < this.Nx) {
@@ -107,10 +104,8 @@ public abstract class AbstractDataProvider implements DataProvider {
 
             if (Nx > this.Nx) {
                 // scaling up
-                float lonSpacing = (lonDistance + this.dx) / Nx;
-                float latSpacing = (latDistance + this.dy) / Ny;
-                float lonOffset = -0.00001f;
-                float latOffset = -0.00001f;
+                lonOffset = -0.00001f;
+                latOffset = -0.00001f;
                 float[] data = roundAndCache();
                 for (int row = 0; row < Ny; row++) {
                     int y = startY + (int) Math.round(Math.floor(row * latSpacing - latOffset));
@@ -123,31 +118,6 @@ public abstract class AbstractDataProvider implements DataProvider {
                 }
 
             } else {
-
-                // calculate the spacing between points and the offset to the first point, there is a special case if a point in the first and
-                // last column/row can be used, this is the 9 to 5 down sampling
-                float latSpacing = (latDistance + this.dy) / Ny;
-                float latRemainder = latDistance % (Ny - 1);
-                float latOffset;
-
-                if (DoubleMath.fuzzyEquals(latRemainder, 0, 0.00001)) {
-                    // this is the 9 to 5 case, where we use 0,2,4,6,8 with a spacing of 2
-                    latOffset = 0;
-                    latSpacing = latDistance / (Ny - 1);
-                } else {
-                    latOffset = latDistance % (Ny - 1);
-                }
-
-                float lonSpacing = (lonDistance + this.dx) / Nx;
-                float lonRemainder = lonDistance % (Nx - 1);
-                float lonOffset;
-
-                if (DoubleMath.fuzzyEquals(lonRemainder, 0, 0.00001)) {
-                    lonOffset = 0;
-                    lonSpacing = lonDistance / (Nx - 1);
-                } else {
-                    lonOffset = lonDistance % (Nx - 1);
-                }
 
                 float[] data = roundAndCache();
 
@@ -258,15 +228,6 @@ public abstract class AbstractDataProvider implements DataProvider {
         return Ny;
     }
 
-    @Override
-    public float getDeltaLat() {
-        return la2 - la1;
-    }
-
-    @Override
-    public float getDeltaLon() {
-        return lo2 - lo1;
-    }
 
     @Override
     public float getDx() {

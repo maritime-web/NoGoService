@@ -101,7 +101,7 @@ public class GridWeatherServiceTest {
 
             }
         }
-        assertEquals("Number of found data values after sampling", 196, found.size());
+        assertEquals("Number of found data values after sampling", 194, found.size());
     }
 
 
