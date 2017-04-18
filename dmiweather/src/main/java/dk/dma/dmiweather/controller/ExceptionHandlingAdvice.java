@@ -3,21 +3,15 @@ package dk.dma.dmiweather.controller;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.exc.PropertyBindingException;
 import dk.dma.common.dto.JSonError;
-import dk.dma.common.exception.ErrorMessage;
 import dk.dma.common.exception.APIException;
+import dk.dma.common.exception.ErrorMessage;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageConversionException;
-import org.springframework.validation.BindException;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -49,6 +43,10 @@ public class ExceptionHandlingAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler(HttpMessageConversionException.class)
     @ResponseBody
     public ResponseEntity<Object> handleBadInput(HttpMessageConversionException e) {
+        return notParsable(e);
+    }
+
+    private ResponseEntity<Object> notParsable(HttpMessageConversionException e) {
         log.info("Exception handled: ", e);
         ErrorMessage error = ErrorMessage.REQUEST_NOT_PARSED;
         JSonError jSonError = error.toJsonError().setDetails(extractDetails(e));
@@ -56,10 +54,16 @@ public class ExceptionHandlingAdvice extends ResponseEntityExceptionHandler {
     }
 
     @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException e, HttpHeaders headers, HttpStatus status, WebRequest request) {
+        return notParsable(e);
+    }
+
+    @Override
     protected ResponseEntity<Object> handleBindException(BindException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
         // bind exceptions are automatically logged by spring as a warning
         return getBindingError(ex);
     }
+
 
     private ResponseEntity<Object> getBindingError(BindingResult ex) {
         FieldError fieldError = ex.getFieldError();
