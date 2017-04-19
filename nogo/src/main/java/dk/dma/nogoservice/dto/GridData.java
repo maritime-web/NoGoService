@@ -1,10 +1,7 @@
 package dk.dma.nogoservice.dto;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 /**
@@ -55,5 +52,14 @@ public class GridData {
      * the data array.
      */
     private float[] data;
+
+    public float getDx() {
+        return (lo2-lo1) / nx;
+    }
+
+    public float getDy() {
+        return (la2 - la1) / ny;
+    }
+
 
 }
