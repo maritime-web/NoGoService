@@ -20,7 +20,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
-import dk.dma.nogoservice.service.S3FileBackedQueryArea;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -85,7 +84,6 @@ public class Application extends WebMvcConfigurerAdapter {
     @Bean
     @Profile(ApiProfiles.PRODUCTION)
     public AmazonS3 amazonS3() {
-        AWSCredentials credentials;
         AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
         try {
             credentialsProvider.getCredentials();
