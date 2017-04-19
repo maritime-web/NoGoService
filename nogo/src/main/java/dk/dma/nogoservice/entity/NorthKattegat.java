@@ -31,32 +31,22 @@ package dk.dma.nogoservice.entity;
 
 import lombok.*;
 
-import javax.persistence.*;
-
-@Entity
 @Getter
 @Setter
-@Table(name="depth_denmark100mNord")
+
 public class NorthKattegat implements GeoCoordinateProvider {
 
-    @Id
-    @Column(name = "id", unique = true, nullable = false, updatable = false)
     @Setter(AccessLevel.NONE)
     private int id;
 
-    @Column(name = "lat", nullable = false)
     private double lat;
 
-    @Column(name = "lon", nullable = false)
     private double lon;
 
-    @Column(name = "n", nullable = false)
     private int n;
 
-    @Column(name = "m", nullable = false)
     private int m;
 
-    @Column(name = "depth")
     private Double depth;
 
 }

@@ -29,46 +29,19 @@
  */
 package dk.dma.nogoservice.entity;
 
-import lombok.*;
-
-import javax.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The data is dived into lon, lat (m, n) squares identifying a depth point.
  * When the depth is NULL the point is over land
  */
-@Entity
 @Getter
 @Setter
-@Table(name = "depth_denmark100m")
 public class SouthKattegat implements GeoCoordinateProvider {
 
-    @Id
-    @Column(name = "id", unique = true, nullable = false, updatable = false)
-    @Setter(AccessLevel.NONE)
-    private Integer id;
-
-    @Column(name = "lat", nullable = false)
     private double lat;
-
-    @Column(name = "lon", nullable = false)
     private double lon;
-
-    @Column(name = "n", nullable = false)
-    private int n;
-
-    @Column(name = "m", nullable = false)
-    private int m;
-
-    @Column(name = "depth")
     private Double depth;
 
-
-    @Override
-    public String toString() {
-        return "SouthKattegat{" +
-                "n=" + n +
-                ", m=" + m +
-                '}';
-    }
 }

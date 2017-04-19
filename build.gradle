@@ -25,12 +25,13 @@ subprojects {
 
     }
 
-    // fail the build if there are two versions of the same jar file
+    // fail the build if there are two versions of the same jar file, and require you to specify the exact version
     configurations.all({
         resolutionStrategy {
             failOnVersionConflict()
 
             force(
+                   "commons-logging:commons-logging:1.2"
             )
         }
     })
