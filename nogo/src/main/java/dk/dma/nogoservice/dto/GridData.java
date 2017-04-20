@@ -1,6 +1,7 @@
 package dk.dma.nogoservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -18,6 +19,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 @ToString(exclude = "data")
 @SuppressFBWarnings({"EI_EXPOSE_REP", "EI_EXPOSE_REP2"})    // We don't care that the float array can be externally manipulated
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class GridData {
     /**
      * As with GRIB we use this value to indicate no value
@@ -25,6 +27,8 @@ public class GridData {
     public static final float NO_DATA = -9999.0f;
 
     private String description;
+
+    private String name;
     /**
      * The lowest longitude value
      */

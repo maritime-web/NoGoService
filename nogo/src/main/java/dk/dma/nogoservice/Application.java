@@ -15,6 +15,7 @@
 package dk.dma.nogoservice;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.Lists;
 import dk.dma.nogoservice.service.*;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -71,10 +72,12 @@ public class Application extends WebMvcConfigurerAdapter {
     @Bean
     @Profile(ApiProfiles.PRODUCTION)
     public List<QueryArea> fromS3(WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm, S3DataLoader dataLoader) throws IOException {
-
         List<QueryArea> beans = new ArrayList<>();
-        beans.add(new S3FileBackedQueryArea("North Kattegat", dataLoader, 	"NorthKattegat_depth.json", weatherService, noGoAlgorithm));
-        beans.add(new S3FileBackedQueryArea("South Kattegat", dataLoader, 	"SouthKattegat_depth.json", weatherService, noGoAlgorithm));
+        ArrayList<String> files = Lists.newArrayList("NorthKattegat_depth.json", "SouthKattegat_depth.json");
+        for (String file : files) {
+            beans.add(new S3FileBackedQueryArea(dataLoader, file, weatherService, noGoAlgorithm));
+        }
+
         return beans;
     }
 

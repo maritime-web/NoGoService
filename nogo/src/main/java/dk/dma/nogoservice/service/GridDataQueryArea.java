@@ -29,19 +29,16 @@ public abstract class GridDataQueryArea implements QueryArea {
     private final AtomicInteger nextRequestId = new AtomicInteger(0);
     private final WeatherService weatherService;
     private final NoGoAlgorithmFacade noGoAlgorithm;
-    private final String areaName;
     private final GridData gridData;
     private final Geometry supports;
 
     /**
-     *  @param weatherService service that can provide weather info
+     * @param weatherService service that can provide weather info
      * @param noGoAlgorithm facade that provides an algo that can create polygons from a grid
-     * @param areaName the display name of the area
      */
-    GridDataQueryArea(WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm, String areaName, GridData gridData) {
+    GridDataQueryArea(WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm, GridData gridData) {
         this.weatherService = weatherService;
         this.noGoAlgorithm = noGoAlgorithm;
-        this.areaName = areaName;
         this.gridData = gridData;
         supports = fromGridData(gridData);
     }
@@ -49,7 +46,7 @@ public abstract class GridDataQueryArea implements QueryArea {
 
     @Override
     public String getName() {
-        return areaName;
+        return gridData.getName();
     }
 
     @Override

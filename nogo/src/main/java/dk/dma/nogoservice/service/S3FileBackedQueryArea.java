@@ -15,15 +15,13 @@ import java.io.IOException;
 @Slf4j
 public class S3FileBackedQueryArea extends GridDataQueryArea {
     /**
-     *
-     * @param areaName the display name of the area
-     * @param dataLoader loads data from S3
+     *  @param dataLoader loads data from S3
      * @param key the fileName of the data file inside the bucket
      * @param weatherService a service that can provide weather data
      * @param noGoAlgorithm an algorithm for calculating noGo polygons
      */
-    public S3FileBackedQueryArea(String areaName, S3DataLoader dataLoader, String key, WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm) throws IOException {
-        super(weatherService, noGoAlgorithm, areaName, dataLoader.loadData(key, GridData.class));
+    public S3FileBackedQueryArea(S3DataLoader dataLoader, String key, WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm) throws IOException {
+        super(weatherService, noGoAlgorithm, dataLoader.loadData(key, GridData.class));
     }
 
 }
