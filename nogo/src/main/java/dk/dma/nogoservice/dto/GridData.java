@@ -1,5 +1,6 @@
 package dk.dma.nogoservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -53,10 +54,12 @@ public class GridData {
      */
     private float[] data;
 
+    @JsonIgnore
     public float getDx() {
         return (lo2-lo1) / nx;
     }
 
+    @JsonIgnore
     public float getDy() {
         return (la2 - la1) / ny;
     }

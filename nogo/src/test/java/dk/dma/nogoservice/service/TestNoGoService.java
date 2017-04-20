@@ -15,8 +15,7 @@
 package dk.dma.nogoservice.service;
 
 import dk.dma.nogoservice.ApiProfiles;
-import dk.dma.nogoservice.dto.NoGoRequest;
-import dk.dma.nogoservice.dto.NoGoResponse;
+import dk.dma.nogoservice.dto.*;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +31,7 @@ import java.util.Map;
 @Profile(ApiProfiles.TEST)
 public class TestNoGoService implements NoGoService {
 
-    public Map<NoGoRequest, NoGoResponse> mapping = new HashMap<>();
+    private Map<NoGoRequest, NoGoResponse> mapping = new HashMap<>();
 
     @Override
     public NoGoResponse getNoGoAreas(@Valid NoGoRequest request) {
@@ -41,6 +40,11 @@ public class TestNoGoService implements NoGoService {
             throw new IllegalStateException("No mapping for request " + request);
         }
         return response;
+    }
+
+    @Override
+    public AreaInfos getInfo() {
+        return new AreaInfos();
     }
 
     public void addRequestResponseMapping(NoGoRequest request, NoGoResponse response) {

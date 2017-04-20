@@ -14,15 +14,11 @@
  */
 package dk.dma.nogoservice.controller;
 
-import dk.dma.nogoservice.dto.MultiPolygon;
-import dk.dma.nogoservice.dto.NoGoRequest;
-import dk.dma.nogoservice.dto.NoGoResponse;
+import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.service.NoGoService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
@@ -51,6 +47,12 @@ public class ApiController {
     public MultiPolygon getNoGoAreasAsWKT(@Valid @RequestBody NoGoRequest request) {
         NoGoResponse nogo = noGoService.getNoGoAreas(request);
         return nogo.toMultiPolygon();
+    }
+
+    @GetMapping("/info")
+    @ApiOperation(value = "Provides a list of the areas for which NoGo information is provided.")
+    public AreaInfos info() {
+        return noGoService.getInfo();
     }
 
 }

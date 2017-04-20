@@ -3,6 +3,7 @@ package dk.dma.nogoservice.service;
 import com.google.common.base.Stopwatch;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
+import com.vividsolutions.jts.io.WKTWriter;
 import dk.dma.common.dto.*;
 import dk.dma.dmiweather.dto.*;
 import dk.dma.nogoservice.algo.NoGoMatcher;
@@ -37,7 +38,7 @@ public abstract class GridDataQueryArea implements QueryArea {
      * @param noGoAlgorithm facade that provides an algo that can create polygons from a grid
      * @param areaName the display name of the area
      */
-    public GridDataQueryArea(WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm, String areaName, GridData gridData) {
+    GridDataQueryArea(WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm, String areaName, GridData gridData) {
         this.weatherService = weatherService;
         this.noGoAlgorithm = noGoAlgorithm;
         this.areaName = areaName;
@@ -101,6 +102,12 @@ public abstract class GridDataQueryArea implements QueryArea {
         List<NoGoPolygon> polygons = noGoAlgorithm.getNoGo(grid, noGoMatcher);
         log.info("Nogo grouping {}x{}, request {} in {} ms", grid.size(), grid.get(0).size(), requestId,  nogoCalculation.stop().elapsed(TimeUnit.MILLISECONDS));
         return noGoResponse.setPolygons(polygons);
+    }
+
+    @Override
+    public AreaInfo getInfo() {
+        String wkt = new WKTWriter().write(supports);
+        return new AreaInfo().setDx(gridData.getDx()).setDy(gridData.getDy()).setName(getName()).setWkt(wkt);
     }
 
     /**

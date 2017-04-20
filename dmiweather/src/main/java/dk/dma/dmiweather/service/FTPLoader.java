@@ -53,7 +53,7 @@ public class FTPLoader {
     private static final int FILE_COUNT = 121;
     private final WeatherService gridWeatherService;
 
-    private String tempDirLocation;
+    private final String tempDirLocation;
     /**
      * Use a known temp dir so we don't have to download the files from FTP when developing
      */

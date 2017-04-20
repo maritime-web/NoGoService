@@ -17,17 +17,17 @@ package dk.dma.nogoservice.service;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
+import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.exception.APIException;
 import dk.dma.common.exception.ErrorMessage;
-import dk.dma.common.dto.GeoCoordinate;
-import dk.dma.nogoservice.dto.NoGoRequest;
-import dk.dma.nogoservice.dto.NoGoResponse;
+import dk.dma.nogoservice.dto.*;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,6 +75,16 @@ public class DefaultNoGoService implements NoGoService {
                 queryAreas.stream().map(QueryArea::getName).collect(Collectors.joining(",")));
     }
 
+    @Override
+    public AreaInfos getInfo() {
+        AreaInfos response = new AreaInfos();
+        List<AreaInfo> areas = new ArrayList<>();
+        for (QueryArea queryArea : queryAreas) {
+            areas.add(queryArea.getInfo());
+        }
+        response.setAreas(areas);
+        return response;
+    }
 
 
 }

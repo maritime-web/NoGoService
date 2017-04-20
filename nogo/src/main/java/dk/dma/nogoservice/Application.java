@@ -14,14 +14,9 @@
  */
 package dk.dma.nogoservice;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.auth.*;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
+import dk.dma.nogoservice.service.*;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
@@ -34,10 +29,11 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static dk.dma.nogoservice.service.S3FileBackedQueryArea.DATA_BUCKET;
 
 /**
  * @author Klaus Groenbaek
@@ -46,12 +42,6 @@ import static dk.dma.nogoservice.service.S3FileBackedQueryArea.DATA_BUCKET;
 @EnableSwagger2
 @SpringBootApplication
 public class Application extends WebMvcConfigurerAdapter {
-
-    @Value("${aws_access_key_id:#{null}}")
-    private String aws_access_key_id;
-
-    @Value("${aws_secret_access_key:#{null}}")
-    private String aws_secret_access_key;
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(Application.class).profiles(ApiProfiles.PRODUCTION).run(args);
@@ -76,30 +66,16 @@ public class Application extends WebMvcConfigurerAdapter {
     }
 
     /**
-     * creates an S3 client, so we can load data from S3
-     * In development credentials can be loaded through the default chain, which looks at the file USER_HOME/.was/credentials
-     * if this is not present, you must provide property configuration for
-     * @return a working S3 client where passwords have been checked
+     * Returns a list of QueryArea beans that can be autowired.
      */
     @Bean
     @Profile(ApiProfiles.PRODUCTION)
-    public AmazonS3 amazonS3() {
-        AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
-        try {
-            credentialsProvider.getCredentials();
-        } catch (SdkClientException e) {
-            Preconditions.checkNotNull(aws_access_key_id, "aws_access_key_id property must be set when there is no USER_HOME/.aws/credentials file on the machine");
-            Preconditions.checkNotNull(aws_access_key_id, "aws_secret_access_key property must be set when there is no USER_HOME/.aws/credentials file on the machine");
-            credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials(aws_access_key_id, aws_secret_access_key));
-        }
+    public List<QueryArea> fromS3(WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm, S3DataLoader dataLoader) throws IOException {
 
-        AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard();
-        builder.setCredentials(credentialsProvider);
-        builder.setRegion("eu-west-1");
-        AmazonS3 amazonS3 = builder.build();
-        Preconditions.checkArgument(amazonS3.doesBucketExist(DATA_BUCKET), "No AWS S3 bucket named " + DATA_BUCKET + " this bucket must exist");
-
-        return amazonS3;
+        List<QueryArea> beans = new ArrayList<>();
+        beans.add(new S3FileBackedQueryArea("North Kattegat", dataLoader, 	"NorthKattegat_depth.json", weatherService, noGoAlgorithm));
+        beans.add(new S3FileBackedQueryArea("South Kattegat", dataLoader, 	"SouthKattegat_depth.json", weatherService, noGoAlgorithm));
+        return beans;
     }
 
 

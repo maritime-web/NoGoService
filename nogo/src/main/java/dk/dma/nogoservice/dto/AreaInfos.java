@@ -12,17 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.nogoservice.service;
+package dk.dma.nogoservice.dto;
 
-import dk.dma.nogoservice.dto.*;
+import lombok.Data;
 
-import javax.validation.Valid;
+import java.util.List;
 
 /**
  * @author Klaus Groenbaek
- *         Created 12/03/17.
+ *         Created 20/04/17.
  */
-public interface NoGoService {
-    NoGoResponse getNoGoAreas(@Valid NoGoRequest request);
-    AreaInfos getInfo();
+@Data
+public class AreaInfos {
+    List<AreaInfo> areas;
 }
