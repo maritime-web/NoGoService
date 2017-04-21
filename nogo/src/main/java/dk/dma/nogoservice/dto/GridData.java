@@ -9,7 +9,9 @@ import lombok.experimental.Accessors;
 /**
  * A class that models a single data series and meta data, similar to a GRIB file with a single parameter
  * The dx, dy values are calculated as dx = (lo2-lo1)/nx; dy = (la2-la1)/ny
- *
+ * This class uses doubles because floats are not precise enough, the 0 bit in a 32 bit float represents a value of 0.00000011920928955078125
+ * which means you can only have 6 significant digits without precision loss, which means that any libraries that take doubles would perform the following conversion
+ * 55.67f => 55.66999816894531, and when converted back to float you would get 55.669998f and not 55.67f
  * @author Klaus Groenbaek
  *         Created 18/04/2017.
  */
@@ -32,19 +34,19 @@ public class GridData {
     /**
      * The lowest longitude value
      */
-    private float lo1;
+    private double lo1;
     /**
      * The highest longitude value
      */
-    private float lo2;
+    private double lo2;
     /**
      * the lowest latitude value
      */
-    private float la1;
+    private double la1;
     /**
      * the highest latitude value
      */
-    private float la2;
+    private double la2;
     /**
      * The number of element on the longitude axis
      */
@@ -59,12 +61,12 @@ public class GridData {
     private float[] data;
 
     @JsonIgnore
-    public float getDx() {
+    public double getDx() {
         return (lo2-lo1) / nx;
     }
 
     @JsonIgnore
-    public float getDy() {
+    public double getDy() {
         return (la2 - la1) / ny;
     }
 

@@ -19,8 +19,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
@@ -33,7 +32,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Class for loading S3 data, also caches the data locally for faster development boot
@@ -99,5 +100,10 @@ public class S3DataLoader {
         } finally {
             log.info("Loaded file {} from Amazon S3 in {} ms", key, stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
         }
+    }
+
+    public List<String> getFiles() {
+        ObjectListing listing = amazonS3.listObjects(DATA_BUCKET);
+        return listing.getObjectSummaries().stream().map(S3ObjectSummary::getKey).collect(Collectors.toList());
     }
 }

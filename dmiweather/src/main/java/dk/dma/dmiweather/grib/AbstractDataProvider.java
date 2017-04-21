@@ -39,14 +39,14 @@ import static dk.dma.dmiweather.service.GribFileWrapper.GRIB_NOT_DEFINED;
 @Slf4j
 public abstract class AbstractDataProvider implements DataProvider {
     private final int dataRounding;
-    private final float dx;
-    private final float dy;
+    private final double dx;
+    private final double dy;
     private final int Ny;
     private final int Nx;
-    private final float lo1;
-    private final float la2;
-    private final float la1;
-    private final float lo2;
+    private final double lo1;
+    private final double la2;
+    private final double la1;
+    private final double lo2;
     private WeakReference<float[]> cachedData;  // todo consider using a GUAVA cache, and share it between all dataProviders to get LRU behaviour
 
 
@@ -81,12 +81,12 @@ public abstract class AbstractDataProvider implements DataProvider {
     }
 
     @Override
-    public float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int Nx, int Ny, float lonSpacing, float lonOffset, float latSpacing, float latOffset) {
+    public float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int Nx, int Ny, double lonSpacing, double lonOffset, double latSpacing, double latOffset) {
 
         validate(northWest, southEast);
 
-        int startY = Math.round((southEast.getLat() - this.la1) / this.dy);
-        int startX = Math.round((northWest.getLon() - this.lo1) / this.dx);
+        int startY = (int) Math.round((southEast.getLat() - this.la1) / this.dy);
+        int startX = (int) Math.round((northWest.getLon() - this.lo1) / this.dx);
 
         float[] grid = new float[Ny * Nx];
 
@@ -122,16 +122,16 @@ public abstract class AbstractDataProvider implements DataProvider {
                 float[] data = roundAndCache();
 
                 for (int row = 0; row < Ny; row++) {
-                    int y = startY + Math.round(row * latSpacing/this.dy + latOffset);
+                    int y = startY + (int ) Math.round(row * latSpacing/this.dy + latOffset);
                     for (int col = 0; col < Nx; col++) {
 
-                        int x = startX + Math.round(col * lonSpacing/this.dx + lonOffset);
+                        int x = startX + (int) Math.round(col * lonSpacing/this.dx + lonOffset);
                         float datum = data[y * this.Nx + x];
 
                         if (datum == GRIB_NOT_DEFINED) {
                             // when we down-sample we may end up selecting only NOT_DEFINED, so we look around to see if there is a defined value close by
-                            int xSearchDistance = Math.round(lonSpacing / 2);
-                            int ySearchDistance = Math.round(latSpacing / 2); // we search the space between points
+                            int xSearchDistance = (int) Math.round(lonSpacing / 2);
+                            int ySearchDistance = (int) Math.round(latSpacing / 2); // we search the space between points
 
                             float[] candidate = new float[]{this.Nx + this.Ny, GRIB_NOT_DEFINED};   // to hold the closest distance and the value
 
@@ -230,12 +230,12 @@ public abstract class AbstractDataProvider implements DataProvider {
 
 
     @Override
-    public float getDx() {
+    public double getDx() {
         return dx;
     }
 
     @Override
-    public float getDy() {
+    public double getDy() {
         return dy;
     }
 

@@ -34,7 +34,7 @@ public interface DataProvider {
      * @param latOffset the offset before the first point on the y-axis
      * @return a one dimensional array for the data vules in the grid
      */
-    float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int nx, int ny, float lonSpacing, float lonOffset, float latSpacing, float latOffset);
+    float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int nx, int ny, double lonSpacing, double lonOffset, double latSpacing, double latOffset);
 
     /**
      * The number of columns modeled by this grid
@@ -48,9 +48,9 @@ public interface DataProvider {
      */
     int getNy();
 
-    float getDx();
+    double getDx();
 
-    float getDy();
+    double getDy();
 
     /**
      * Validate that the request is supported by this provider

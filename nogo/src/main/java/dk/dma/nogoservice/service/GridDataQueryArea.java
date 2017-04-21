@@ -114,12 +114,12 @@ public abstract class GridDataQueryArea implements QueryArea {
 
         GeoCoordinate northWest = request.getNorthWest();
         GeoCoordinate southEast = request.getSouthEast();
-        float lonDistance = southEast.getLon() - northWest.getLon();
-        float latDistance = northWest.getLat() - southEast.getLat();
-        float dy = gridData.getDy();
-        float dx = gridData.getDx();
-        int Nx = Math.round(lonDistance / dx) +1;
-        int Ny = Math.round(latDistance / dy) +1;
+        double lonDistance = southEast.getLon() - northWest.getLon();
+        double latDistance = northWest.getLat() - southEast.getLat();
+        double dy = gridData.getDy();
+        double dx = gridData.getDx();
+        int Nx = (int) Math.round(lonDistance / dx) +1;
+        int Ny = (int) Math.round(latDistance / dy) +1;
         float[] data = gridData.getData();
 
         int startY = (int) Math.floor((southEast.getLat() - gridData.getLa1()) / dy);

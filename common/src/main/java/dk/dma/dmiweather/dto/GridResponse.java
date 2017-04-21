@@ -36,8 +36,8 @@ public class GridResponse {
     private List<GridDataPoint> points;
     private JSonWarning warning;
     // values below are optional and only included when gridMetrics=true is on the URL
-    private Float dx;
-    private Float dy;
+    private Double dx;
+    private Double dy;
     private Integer Nx;
     private Integer Ny;
     private GeoCoordinate northWest;

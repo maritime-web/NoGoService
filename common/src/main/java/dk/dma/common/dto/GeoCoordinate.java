@@ -20,6 +20,9 @@ import lombok.experimental.Accessors;
 import javax.validation.constraints.NotNull;
 
 /**
+ * This class uses doubles because floats are not precise enough, the 0 bit in a 32 bit float represents a value of 0.00000011920928955078125
+ *  which means you can only have 6 significant digits without precision loss, which means that any libraries that take doubles would perform the following conversion
+ * 55.67f => 55.66999816894531, and when converted back to float you would get 55.669998f and not 55.67f
  * @author Klaus Groenbaek
  *         Created 12/03/17.
  */
@@ -29,27 +32,22 @@ import javax.validation.constraints.NotNull;
 @Accessors(chain = true)
 public class GeoCoordinate {
     @NotNull
-    private Float lon;
+    private Double lon;
     @NotNull
-    private Float lat;
+    private Double lat;
 
-    public GeoCoordinate(float lon, float lat) {
+    public GeoCoordinate(double lon, double lat) {
         this.lon = lon;
         this.lat = lat;
     }
 
-    public GeoCoordinate(double lon, double lat) {
-        this.lon = (float) lon;
-        this.lat = (float) lat;
-    }
-
     public GeoCoordinate setLon(double lon) {
-        this.lon = (float) lon;
+        this.lon = lon;
         return this;
     }
 
     public GeoCoordinate setLat(double lat) {
-        this.lat = (float) lat;
+        this.lat = lat;
         return this;
     }
 

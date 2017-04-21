@@ -28,8 +28,8 @@ public class AreaInfo {
 
     private String name;
     private String wkt;
-    private float dx;
-    private float dy;
+    private double dx;
+    private double dy;
 
 
 }

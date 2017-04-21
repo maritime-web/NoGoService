@@ -49,8 +49,8 @@ public class GribFileWrapper {
     private final ImmutableMap<GridParameterType, DataProvider> dataProviders;
     private final int dataRounding;
     private final int coordinateRouding;
-    private float dx;
-    private float dy;
+    private double dx;
+    private double dy;
 
     GribFileWrapper(Instant date, File file, int dataRounding, int coordinateRouding) {
         this.date = date;
@@ -58,7 +58,7 @@ public class GribFileWrapper {
         this.coordinateRouding = coordinateRouding;
         dataProviders = ImmutableMap.copyOf(initProviders(file));
 
-        float smallestDx = Float.MAX_VALUE;
+        double smallestDx = Float.MAX_VALUE;
         DataProvider found = null;
         for (DataProvider dataProvider : dataProviders.values()) {
             if (dataProvider.getDx()  < smallestDx ) {
@@ -129,13 +129,13 @@ public class GribFileWrapper {
 
         // If there is no scaling information, we use the native resolution, if scaling info (Nx,Ny) is provided we use it calculate lat/lon spacing and lat/lon offset
         // so we can generate the sampled coordinates
-        float lonDistance = southEast.getLon() - northWest.getLon();
-        float latDistance = northWest.getLat() - southEast.getLat();
-        int nativeNx = Math.round(lonDistance / dx) +1;
-        int nativeNy = Math.round(latDistance / dy) +1;
+        double lonDistance = southEast.getLon() - northWest.getLon();
+        double latDistance = northWest.getLat() - southEast.getLat();
+        int nativeNx = (int) Math.round(lonDistance / dx) +1;
+        int nativeNy = (int) Math.round(latDistance / dy) +1;
         int Nx, Ny;
-        float latSpacing, latOffset;
-        float lonSpacing, lonOffset;
+        double latSpacing, latOffset;
+        double lonSpacing, lonOffset;
         if (request.getNx() == null) {
             // use resolution of the smallest data series
             Nx = nativeNx;
@@ -158,7 +158,7 @@ public class GribFileWrapper {
             // calculate the spacing between points and the offset to the first point, there is a special case if a point in the first and
             // last column/row can be used, this is the 9 to 5 down sampling
             latSpacing = (latDistance + this.dy) / Ny;
-            float latRemainder = latDistance % (Ny - 1);
+            double latRemainder = latDistance % (Ny - 1);
 
             if (DoubleMath.fuzzyEquals(latRemainder, 0, 0.00001)) {
                 // this is the 9 to 5 case, where we use 0,2,4,6,8 with a spacing of 2
@@ -169,7 +169,7 @@ public class GribFileWrapper {
             }
 
             lonSpacing = (lonDistance + this.dx) / Nx;
-            float lonRemainder = lonDistance % (Nx - 1);
+            double lonRemainder = lonDistance % (Nx - 1);
 
             if (DoubleMath.fuzzyEquals(lonRemainder, 0, 0.00001)) {
                 lonOffset = 0;
@@ -182,8 +182,8 @@ public class GribFileWrapper {
         ArrayList<GridDataPoint> points = new ArrayList<>(Nx * Ny);
         for (int y = 0; y < Ny; y++) {
             for (int x = 0; x < Nx; x++) {
-                float lon = northWest.getLon() + x * dx;
-                float lat = southEast.getLat() + y * dy;
+                double lon = northWest.getLon() + x * dx;
+                double lat = southEast.getLat() + y * dy;
                 if (coordinateRouding != -1) {
                     lon = MathUtil.round(lon, coordinateRouding);
                     lat = MathUtil.round(lat, coordinateRouding);
