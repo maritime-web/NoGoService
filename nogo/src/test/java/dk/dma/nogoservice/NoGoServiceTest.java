@@ -19,6 +19,7 @@ import dk.dma.Asserts;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.service.TestNoGoService;
+import dk.dma.nogoservice.service.TestTokenProvider;
 import lombok.SneakyThrows;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,6 +55,9 @@ public class NoGoServiceTest {
 
     @LocalServerPort
     private int port;
+
+    @Autowired
+    private TestTokenProvider tokenProvider;
 
     @Test
     public void staticRequest() throws Exception {
@@ -114,6 +118,7 @@ public class NoGoServiceTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(Lists.newArrayList(MediaType.APPLICATION_JSON));
+        headers.add("Authorization", "Bearer " + tokenProvider.getToken());
 
         RequestEntity<NoGoRequest> requestEntity = new RequestEntity<>(request, headers, HttpMethod.POST, getURI(path));
         ResponseEntity<T> responseEntity = template.exchange(requestEntity, responseClass);
@@ -151,5 +156,6 @@ public class NoGoServiceTest {
     private URI getURI(String path) {
         return new URI("http://localhost:" +port + "/nogo" + path);
     }
+
 
 }

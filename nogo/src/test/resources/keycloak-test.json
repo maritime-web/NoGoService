@@ -1,0 +1,8 @@
+{
+  "realm": "test",
+  "realm-public-key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCxZVhqQDxtLiWPMtYPuehk3JOC5YafwRJrlWTd33fltgd36KBp2yQPyHHwWsPI1teJ0PRWo2s4qnwvSJLnINju2s8yuS7QSglqe+Ip2pphD8ii8MZwfWot8VXjCQ7yn3YSL3egXbgOrury3g9DJDaDt85RbyIH/hv7g9WFU/Q/8wIDAQAB",
+  "bearer-only": true,
+  "auth-server-url": "http://localhost:8080/auth",
+  "ssl-required": "external",
+  "resource": "urn:mrn:mcl:service:design:dma:no-go-area"
+}
