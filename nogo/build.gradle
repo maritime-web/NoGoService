@@ -14,6 +14,8 @@ dependencies {
     compile project(':common')
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     compile 'org.springframework.boot:spring-boot-starter-web'
+    compile 'org.springframework.boot:spring-boot-starter-security'
+    compile 'org.keycloak:keycloak-spring-security-adapter:2.5.4.Final'
 
     compile 'com.vividsolutions:jts:1.13'
 
