@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 
@@ -58,6 +59,7 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter  {
     {
         super.configure(http);
         http
+                .addFilterBefore(new CORSFilter(), ChannelProcessingFilter.class)
                 .csrf().disable()
                 .requestMatchers()
                 .antMatchers("/**")
@@ -72,5 +74,6 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter  {
         registrationBean.setEnabled(false);
         return registrationBean;
     }
+
 
 }
