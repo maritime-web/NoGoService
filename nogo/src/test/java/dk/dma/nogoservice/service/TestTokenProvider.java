@@ -25,6 +25,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 
@@ -44,7 +45,7 @@ public class TestTokenProvider {
         ClassPathResource resource = new ClassPathResource("/privateKey.base64");
 
         try (InputStream inputStream = resource.getInputStream()) {
-            String base64 = CharStreams.toString(new InputStreamReader(inputStream));
+            String base64 = CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
             byte[] bytes = BaseEncoding.base64().decode(base64);
             privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(bytes));
         }
