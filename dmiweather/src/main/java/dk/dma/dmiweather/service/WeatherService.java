@@ -15,31 +15,29 @@
 package dk.dma.dmiweather.service;
 
 import com.google.common.base.Stopwatch;
-import dk.dma.common.exception.ErrorMessage;
-import dk.dma.dmiweather.dto.GridRequest;
-import dk.dma.dmiweather.dto.GridResponse;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.vividsolutions.jts.io.WKTWriter;
+import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.exception.APIException;
-import lombok.Setter;
-import lombok.SneakyThrows;
+import dk.dma.common.exception.ErrorMessage;
+import dk.dma.dmiweather.dto.*;
+import lombok.*;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.concurrent.GuardedBy;
 import java.io.File;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
+import java.text.*;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
 /**
  * A service that provide different weather data based loaded from GRIB files
@@ -58,81 +56,190 @@ public class WeatherService {
     }
 
     private final int dataRounding;
-    private final int coordinateRouding;
+    private final int coordinateRounding;
 
-    private volatile ConcurrentSkipListMap<Instant, GribFileWrapper> cache;
+    @GuardedBy("$lock")
+    private NavigableMap<Instant, ForecastContainer> cache = new TreeMap<>();
+
     @Setter
     private volatile ErrorMessage errorMessage;
 
     @Autowired
     public WeatherService(@Value("${rounding.data}") int dataRounding, @Value("${rounding.coordinates}")int coordinateRounding) {
         this.dataRounding = dataRounding;
-        this.coordinateRouding = coordinateRounding;
+        this.coordinateRounding = coordinateRounding;
     }
 
     public GridResponse request(GridRequest request, boolean removeEmpty, boolean gridMetrics) {
 
+        GeoCoordinate northWest = request.getNorthWest();
+        GeoCoordinate southEast = request.getSouthEast();
+
+        if (northWest.getLon() > southEast.getLon()) {
+            throw new APIException(ErrorMessage.INVALID_GRID_LOT);
+        }
+        if (northWest.getLat() < southEast.getLat()) {
+            throw new APIException(ErrorMessage.INVALID_GRID_LAT);
+        }
+
         Stopwatch stopwatch = Stopwatch.createStarted();
-
         try {
-            if (cache == null) {
-                if (errorMessage != null) {
-                    throw new APIException(errorMessage);
-                }
-                else {
-                    throw new APIException(ErrorMessage.DATA_NOT_LOADED);
-                }
-            } else {
-                // copy to a local to prevent a swap during the process
-                ConcurrentSkipListMap<Instant, GribFileWrapper> local = this.cache;
-                if (request.getTime().isBefore(local.firstKey()) || request.getTime().isAfter(local.lastKey())) {
-                    throw dataOutOfRange(local.firstKey(), local.lastKey());
-                }
-                GribFileWrapper wrapper = local.get(request.getTime());
-                if (wrapper != null) {
-                   return wrapper.getData(request, removeEmpty, gridMetrics);
-                } else {
-                    // Not on the hour request, find the nearest
-                    Map.Entry<Instant, GribFileWrapper> ceilingEntry = local.ceilingEntry(request.getTime());
-                    Map.Entry<Instant, GribFileWrapper> floorEntry = local.floorEntry(request.getTime());
+            return findForecastData(request.getTime()).getData(request, removeEmpty, gridMetrics);
 
-                    Duration ceilDuration = Duration.between(request.getTime(), ceilingEntry.getKey()).abs();
-                    Duration floorDuration = Duration.between(request.getTime(), floorEntry.getKey()).abs();
-                    if (ceilDuration.compareTo(floorDuration) < 0) {
-                        return ceilingEntry.getValue().getData(request, removeEmpty, gridMetrics);
-                    } else {
-                        return floorEntry.getValue().getData(request, removeEmpty, gridMetrics);
-                    }
-                }
-            }
         } finally {
             log.info("Completed weather request in {} ms", stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
         }
     }
 
     /**
+     * Find the container that holds forcasts for the time we are interested in.
+     * @param instant the time we need a forecast for
+     * @return the container
+     */
+    @Synchronized
+    private ForecastContainer findForecastData(Instant instant) {
+
+        if (cache.isEmpty()) {
+            if (errorMessage != null) {
+                throw new APIException(errorMessage);
+            }
+            else {
+                throw new APIException(ErrorMessage.DATA_NOT_LOADED);
+            }
+        }
+
+        // copy to a local to prevent a swap during the process
+        if (instant.isBefore(this.cache.firstKey()) || instant.isAfter(this.cache.lastKey())) {
+            throw dataOutOfRange(this.cache.firstKey(), this.cache.lastKey());
+        }
+        ForecastContainer wrapper = this.cache.get(instant);
+        if (wrapper != null) {
+            return wrapper;
+        } else {
+            // Not on the hour request, find the nearest
+            Map.Entry<Instant, ForecastContainer> ceilingEntry = this.cache.ceilingEntry(instant);
+            Map.Entry<Instant, ForecastContainer> floorEntry = this.cache.floorEntry(instant);
+
+            Duration ceilDuration = Duration.between(instant, ceilingEntry.getKey()).abs();
+            Duration floorDuration = Duration.between(instant, floorEntry.getKey()).abs();
+            if (ceilDuration.compareTo(floorDuration) < 0) {
+                return ceilingEntry.getValue();
+            } else {
+                return floorEntry.getValue();
+            }
+        }
+    }
+
+    /**
      * called when a new list of file have been loaded from FTP.
-     *
-     * @param files new grib files
+     * Access must be synchronized, as we update the map
+     * @param files A map of files, and the associated creation time from the FTP server
+     * @param configuration a particular set of Grib Files
      */
     @SneakyThrows(ParseException.class)
-    void newFiles(List<File> files) {
+    @Synchronized
+    void newFiles(Map<File, Instant> files, ForecastConfiguration configuration) {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         DateFormat df = new SimpleDateFormat("yyyyMMddHHZ");
-        ConcurrentSkipListMap<Instant, GribFileWrapper> newCache = new ConcurrentSkipListMap<>();
-        for (File file : files) {
-            Matcher matcher = FTPLoader.DENMARK_FILE_PATTERN.matcher(file.getName());
+
+        // Mark all files from the previous load as old
+        for (ForecastContainer forecastData : cache.values()) {
+            forecastData.markOld(configuration);
+        }
+        for (Map.Entry<File, Instant> entry : files.entrySet()) {
+            File file = entry.getKey();
+            Instant creation = entry.getValue();
+            Matcher matcher = configuration.getFilePattern().matcher(file.getName());
             if (matcher.matches()) {
                 String dateString = matcher.group(1);
                 Date date = df.parse(dateString + "+0000");
                 Instant instant = date.toInstant();
-                GribFileWrapper wrapper = new GribFileWrapper(instant, file, dataRounding, coordinateRouding);
-                newCache.put(instant, wrapper);
+                GribFileWrapper wrapper = new GribFileWrapper(instant, creation, file, dataRounding, coordinateRounding);
+
+                ForecastContainer forecastData = new ForecastContainer(coordinateRounding);
+                ForecastContainer previous = cache.putIfAbsent(instant, forecastData);
+                if (previous != null) {
+                    forecastData = previous;
+                }
+                forecastData.newFile(configuration, wrapper);
             }
         }
-        cache = newCache;
+
+        // remove all outdated ForecastData (we have to collect to avoid ConcurrentModificationException)
+        List<Instant> old = cache.entrySet().stream()
+                .filter(e -> e.getValue().isOld())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        for (Instant instant : old) {
+            cache.remove(instant);
+        }
+
         errorMessage = null;
         log.info("Loading {} GRIB files in {} ms", files.size(), stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    public WeatherAreaInfos info() {
+
+        ArrayList<WeatherAreaInfo> areas = new ArrayList<>();
+        WKTWriter writer = new WKTWriter();
+        List<InfoHelper> infos = getInfo();
+        for (InfoHelper info : infos) {
+            GribFileWrapper wrapper = info.getWrapper();
+            WeatherAreaInfo area = new WeatherAreaInfo().setName(info.configuration.name()).setStart(info.start).setEnd(info.end)
+                    .setDx(wrapper.getDx()).setDy(wrapper.getDy()).setNx(wrapper.getNx()).setNy(wrapper.getNy()).setWkt(writer.write(wrapper.getArea()));
+            areas.add(area);
+        }
+        return new WeatherAreaInfos().setAreas(areas);
+    }
+
+    /**
+     * Run through the cach and check when each configuration starts and ends. Since we only want to loop the cache a single time,
+     * finding the end time is a little tricky.
+     * This could be created when new files are added, and cached if needed
+     */
+    @Synchronized
+    private List<InfoHelper> getInfo() {
+
+        Instant previous = null;
+        Map<ForecastConfiguration, Instant> starts = new HashMap<>();
+        Map<ForecastConfiguration, InfoHelper> helpers = new HashMap<>();
+
+        for (Map.Entry<Instant, ForecastContainer> entry : cache.entrySet()) {
+            Instant instant = entry.getKey();
+            Map<ForecastConfiguration, GribFileWrapper> configurations = entry.getValue().getGribFiles();
+            for (Map.Entry<ForecastConfiguration, GribFileWrapper> fileEntry : configurations.entrySet()) {
+                ForecastConfiguration config = fileEntry.getKey();
+                if (!starts.containsKey(config)) {
+                    helpers.put(config, new InfoHelper().setStart(instant).setConfiguration(config).setWrapper(fileEntry.getValue()));
+                    starts.put(config, instant);
+                }
+            }
+            // if the start map has a configuration which is not in the configurations keyset, then the previous one was the end.
+            Sets.SetView<ForecastConfiguration> finished = Sets.difference(starts.keySet(), configurations.keySet());
+            for (ForecastConfiguration forecastConfiguration : finished) {
+                helpers.get(forecastConfiguration).setEnd(previous);
+            }
+            previous = instant;
+        }
+        for (InfoHelper helper : helpers.values()) {
+            if (helper.getEnd() == null) {
+                helper.setEnd(previous);
+            }
+        }
+        return Lists.newArrayList(helpers.values());
+    }
+
+    /**
+     * Helper for building Info
+     */
+    @Data
+    @Accessors(chain = true)
+    private static class InfoHelper {
+        private ForecastConfiguration configuration;
+        private GribFileWrapper wrapper;
+        private Instant start;
+        private Instant end;
     }
 }

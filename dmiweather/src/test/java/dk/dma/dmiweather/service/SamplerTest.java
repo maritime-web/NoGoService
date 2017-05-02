@@ -18,7 +18,7 @@ import static org.junit.Assert.assertNotEquals;
 public class SamplerTest {
 
     /**
-     * Create a 12 x 12 grid sampled it down to 6x6, this this should give us (1,1) (3,3) etc which all have data
+     * Create a 12 x 12 grid sampled it down to 6x6, this this should give us a distance of 12 / 5
      */
     @Test
     public void sixBySix() {
@@ -26,22 +26,21 @@ public class SamplerTest {
         AbstractDataProvider dataProvider = createGrid(12);
 
 
-        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 11), new GeoCoordinate(11, 0), 6, 6, 2, 1, 2, 1);
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 11), new GeoCoordinate(11, 0), 6, 6, 2, 2);
         for (float v : sampled) {
             assertNotEquals(v, GRIB_NOT_DEFINED, 0.0000001);
         }
     }
 
     /**
-     * Create a 12 x 12 grid, sample it down to 4 x 4, this should give us (1,1),(4,1),(7,1),(10,1),(1,4),(4,4)...
+     * Create a 12 x 12 grid, sample it down to 4 x 4, this should give us a distance of 11 / 3
      * the direct coordinates have no data, but the searching of neighbouring cells should find some data
      */
     @Test
     public void fourByFour() {
         AbstractDataProvider dataProvider = createGrid(12);
-        float spacing = 12f / 4;
-        float offset =  (11 % 3) / 2;
-        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 11), new GeoCoordinate(11, 0), 4, 4, spacing, offset, spacing, offset);
+        float spacing = 11f / 3;
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 11), new GeoCoordinate(11, 0), 4, 4, spacing, spacing);
         for (float v : sampled) {
             assertNotEquals(v, GRIB_NOT_DEFINED, 0.0000001);
         }
@@ -53,9 +52,8 @@ public class SamplerTest {
     @Test
     public void subGridFourByFour() {
         AbstractDataProvider dataProvider = createGrid(12);
-        float spacing = 12f / 4;
-        float offset =  (11 % 3) / 2;
-        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 7), new GeoCoordinate(7, 0), 4, 4, spacing, offset, spacing, offset);
+        float spacing = 11f / 3;
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 7), new GeoCoordinate(7, 0), 4, 4, spacing, spacing);
         for (float v : sampled) {
             assertNotEquals(v, GRIB_NOT_DEFINED, 0.0000001);
         }
@@ -63,14 +61,14 @@ public class SamplerTest {
     }
 
     /**
-     * We take an 9x9 of a 12x12 grid, and down sample to 5x5.
-     * Sampling 9 to 5 should give us 0,2,4,6,8 with spacing 2
+     * We take an 9x9 of a 12x12 grid, and down sample to 5x5, this should give us a spacing of 8/4
+     * Sampling 9 to 5 should give us 0,2,4,6,8
      */
     @Test
     public void subGridFiveByFive() {
         AbstractDataProvider dataProvider = createGrid(12);
 
-        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 8), new GeoCoordinate(8, 0), 5, 5, 2, 0, 2, 0);
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 8), new GeoCoordinate(8, 0), 5, 5, 2, 2);
         for (float v : sampled) {
             assertNotEquals(v, GRIB_NOT_DEFINED, 0.0000001);
         }
@@ -99,7 +97,7 @@ public class SamplerTest {
     private List<Float> upSampling(int size) {
         AbstractDataProvider dataProvider = createGrid(2);
         float spacing =  2f / size;
-        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 1), new GeoCoordinate(1, 0), size, size, spacing, 0, spacing, 0);
+        float[] sampled = dataProvider.getData(new GeoCoordinate(0, 1), new GeoCoordinate(1, 0), size, size, spacing, spacing);
         int expected = size * size;
         assertEquals("length", expected, sampled.length);
         List<Float> found = new ArrayList<>();

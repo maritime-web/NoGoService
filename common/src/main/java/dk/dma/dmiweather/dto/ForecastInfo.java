@@ -14,10 +14,26 @@
  */
 package dk.dma.dmiweather.dto;
 
+import lombok.Data;
+import lombok.experimental.Accessors;
+
+import java.time.Instant;
+
 /**
+ * Since a data can come from forecasts generated at different times (different GRIB files) we need to specify interval
  * @author Klaus Groenbaek
- *         Created 30/03/17.
+ *         Created 01/05/17.
  */
-public enum GridParameterType {
-    WindDirection, WindSpeed, WaveHeight, WaveDirection, WavePeriod, CurrentDirection, CurrentSpeed, Density, SeaLevel
+@Data
+@Accessors(chain = true)
+public class ForecastInfo {
+
+
+
+
+    private GridParameters parameters;
+    private Instant forecastDate;
+    private Instant creationDate;
+
+
 }

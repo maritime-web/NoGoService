@@ -35,7 +35,9 @@ public class GridDataPoint {
     Float seaLevel; // 82
     Float windDirection;     // derived from 33 and 34
     Float windSpeed;         // derived from 33 and 34
-    Float wave;              // from the wave GRIB files, they have different grid resolution
+    Float waveHeight;        // from the wave GRIB files, they have different grid resolution
+    Float wavePeriod;        // from the wave GRIB files, they have different grid resolution
+    Float waveDirection;        // from the wave GRIB files, they have different grid resolution
     Float currentDirection;  // derived from 49 and 50
     Float currentSpeed;      // derived from 49 and 50
     Float density;           // can be calculated from Salinity (88) and temperature (80)
@@ -55,8 +57,14 @@ public class GridDataPoint {
                 case SeaLevel:
                     setSeaLevel(dataValue);
                     break;
-                case Wave:
-                    setWave(dataValue);
+                case WaveDirection:
+                    setWaveDirection(dataValue);
+                    break;
+                case WaveHeight:
+                    setWaveHeight(dataValue);
+                    break;
+                case WavePeriod:
+                    setWavePeriod(dataValue);
                     break;
                 case WindDirection:
                     setWindDirection(dataValue);
@@ -68,8 +76,11 @@ public class GridDataPoint {
         }
     }
 
+    /**
+     * Check if this point has values, does not check each fields since it know which values are set together
+     * @return true if the point has no data
+     */
     public boolean hasValues() {
-       return seaLevel != null || windDirection != null || windSpeed != null || wave != null || currentDirection != null ||
-                currentSpeed != null ||  density != null;
+        return seaLevel != null || windDirection != null || waveDirection != null || currentSpeed != null || density != null;
     }
 }

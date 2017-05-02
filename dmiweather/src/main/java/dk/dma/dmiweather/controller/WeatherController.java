@@ -14,15 +14,11 @@
  */
 package dk.dma.dmiweather.controller;
 
-import dk.dma.dmiweather.dto.GridRequest;
-import dk.dma.dmiweather.dto.GridResponse;
+import dk.dma.dmiweather.dto.*;
 import dk.dma.dmiweather.service.WeatherService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
@@ -55,6 +51,11 @@ public class WeatherController {
             log.warn("Client requesting with removeEmpty and gridMetrics, this is not a good idea as indexes into data will not work as expected.");
         }
         return service.request(request, removeEmpty, gridMetrics);
+    }
+
+    @GetMapping("/info")
+    public WeatherAreaInfos info() {
+        return service.info();
     }
 
 }

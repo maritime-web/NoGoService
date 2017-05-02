@@ -16,7 +16,6 @@ package dk.dma.dmiweather.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.collect.Lists;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.exception.APIException;
 import dk.dma.common.exception.ErrorMessage;
@@ -25,13 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.io.*;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -60,7 +56,7 @@ public class GridWeatherServiceTest {
     @Test
     public void topLeftVerticalLine2() throws Exception {
         GridResponse response = makeRequest(r -> r.setNorthWest(new GeoCoordinate(9.0, 57.5))
-                .setSouthEast(new GeoCoordinate(9.0, 57.45)), true);
+                .setSouthEast(new GeoCoordinate(9.0, 57.45)), true, Instant.now());
 
         assertEquals("Point should all be empty", 0, response.getPoints().size());
 
@@ -70,7 +66,7 @@ public class GridWeatherServiceTest {
     public void allData() throws Exception {
 
         GridResponse response = makeRequest(r-> r.setNorthWest(new GeoCoordinate(9.0, 57.5))
-                .setSouthEast(new GeoCoordinate(15.0, 53.0)).getParameters().setSeaLevel(true), false);
+                .setSouthEast(new GeoCoordinate(15.0, 53.0)).getParameters().setSeaLevel(true), false, Instant.now());
 
         assertEquals("Number of dataPoints", 433 *541, response.getPoints().size());
         // find the first datapoint with values
@@ -90,7 +86,7 @@ public class GridWeatherServiceTest {
         int nx = 20;
         int ny = 30;
         GridResponse response = makeRequest(r-> r.setNorthWest(new GeoCoordinate(9.0, 57.5))
-                .setSouthEast(new GeoCoordinate(15.0, 53.0)).setNx(nx).setNy(ny).getParameters().setSeaLevel(true), false);
+                .setSouthEast(new GeoCoordinate(15.0, 53.0)).setNx(nx).setNy(ny).getParameters().setSeaLevel(true), false, Instant.now());
 
         assertEquals("Number of dataPoints", nx * ny, response.getPoints().size());
 
@@ -101,7 +97,7 @@ public class GridWeatherServiceTest {
 
             }
         }
-        assertEquals("Number of found data values after sampling", 193, found.size());
+        assertEquals("Number of found data values after sampling", 183, found.size());
     }
 
 
@@ -133,7 +129,8 @@ public class GridWeatherServiceTest {
     @Test
     public void beforeFirstForcast() throws Exception {
         try {
-            makeRequest(r->r.setTime(r.getTime().minus(3, ChronoUnit.DAYS)), true);
+            makeRequest(r->r.setTime(r.getTime().minus(3, ChronoUnit.DAYS)).setNorthWest(new GeoCoordinate(10.52, 57.5))
+                    .setSouthEast(new GeoCoordinate(10.57, 57.5)), true, Instant.now());
             fail("Should throw exception.");
         } catch (APIException e) {
             assertEquals(ErrorMessage.OUT_OF_DATE_RANGE, e.getError());
@@ -145,7 +142,7 @@ public class GridWeatherServiceTest {
         ZonedDateTime departure = ZonedDateTime.now(ZoneOffset.UTC).withMonth(3).withDayOfMonth(30).withHour(12).withMinute(29).withSecond(0).withNano(0);
 
         GridResponse response = makeRequest(r -> r.setTime(departure.toInstant()).setNorthWest(new GeoCoordinate(10.52, 57.5))
-                .setSouthEast(new GeoCoordinate(10.57, 57.5)), false);
+                .setSouthEast(new GeoCoordinate(10.57, 57.5)), false, Instant.now());
 
         assertEquals(departure.withMinute(0).toInstant(), response.getForecastDate()) ;
     }
@@ -155,7 +152,7 @@ public class GridWeatherServiceTest {
         ZonedDateTime departure = ZonedDateTime.now(ZoneOffset.UTC).withMonth(3).withDayOfMonth(30).withHour(12).withMinute(31).withSecond(0).withNano(0);
 
         GridResponse response = makeRequest(r -> r.setTime(departure.toInstant()).setNorthWest(new GeoCoordinate(10.52, 57.5))
-                .setSouthEast(new GeoCoordinate(10.57, 57.5)), false);
+                .setSouthEast(new GeoCoordinate(10.57, 57.5)), false, Instant.now());
 
 
         assertEquals(departure.withMinute(0).plusHours(1).toInstant(), response.getForecastDate()) ;
@@ -165,7 +162,7 @@ public class GridWeatherServiceTest {
     public void westLargerThanEast() throws Exception {
         try {
             makeRequest(r -> r.setNorthWest(new GeoCoordinate(12.0, 57.5))
-                    .setSouthEast(new GeoCoordinate(11.0, 53.0)), true);
+                    .setSouthEast(new GeoCoordinate(11.0, 53.0)), true, Instant.now());
             fail("Request not valid");
         } catch (APIException e) {
             assertEquals(ErrorMessage.INVALID_GRID_LOT, e.getError());
@@ -177,7 +174,7 @@ public class GridWeatherServiceTest {
     public void southLargerThanNorth() throws Exception {
         try {
             makeRequest(r -> r.setNorthWest(new GeoCoordinate(11.0, 54.5))
-                    .setSouthEast(new GeoCoordinate(12.0, 55.0)), true);
+                    .setSouthEast(new GeoCoordinate(12.0, 55.0)), true, Instant.now());
             fail("Request not valid");
         } catch (APIException e) {
             assertEquals(ErrorMessage.INVALID_GRID_LAT, e.getError());
@@ -187,7 +184,7 @@ public class GridWeatherServiceTest {
 
     private void outsideGrid(CoordinateConfigurer configurer) throws IOException {
         try {
-            makeRequest(configurer, false);
+            makeRequest(configurer, false, Instant.now());
             fail("Should throw IllegalArgumentException");
         } catch (APIException e) {
             assertEquals(ErrorMessage.OUTSIDE_GRID, e.getError());
@@ -196,23 +193,32 @@ public class GridWeatherServiceTest {
 
 
     private void check(CoordinateConfigurer configurer, String resultFile) throws IOException {
-        GridResponse response = makeRequest(configurer, false);
+        Instant now = Instant.now();
+        GridResponse response = makeRequest(configurer, false, now);
 
-        //log.info(new ObjectMapper().registerModule(new JavaTimeModule()).writerWithDefaultPrettyPrinter().writeValueAsString(response));
+        log.info(new ObjectMapper().registerModule(new JavaTimeModule()).writerWithDefaultPrettyPrinter().writeValueAsString(response));
 
         ClassPathResource json = new ClassPathResource(resultFile, getClass());
         try (InputStream inputStream = json.getInputStream()) {
             GridResponse expected = new ObjectMapper().registerModule(new JavaTimeModule()).readValue(inputStream, GridResponse.class);
             expected.setQueryTime(response.getQueryTime()); // copy the query time since we don't control that
+            for (ForecastInfo forecastInfo : expected.getForecasts()) {
+                forecastInfo.setCreationDate(now);
+            }
+
             assertEquals(expected, response);
         }
     }
 
-    private GridResponse makeRequest(CoordinateConfigurer configurer, boolean removeEmpty) throws IOException {
+    private GridResponse makeRequest(CoordinateConfigurer configurer, boolean removeEmpty, Instant now) throws IOException {
         ClassPathResource resource1 = new ClassPathResource("DMI_metocean_DK.2017033012.grb", getClass());
         ClassPathResource resource2 = new ClassPathResource("DMI_metocean_DK.2017033013.grb", getClass());
         WeatherService service = new WeatherService(3, 5);
-        service.newFiles(Lists.newArrayList(resource1.getFile(), resource2.getFile()));
+        Map<File, Instant> map = new HashMap<>();
+        map.put(resource1.getFile(), now);
+        map.put(resource2.getFile(), now);
+
+        service.newFiles( map, ForecastConfiguration.DANISH_METOCEAN_SHELF);
 
         ZonedDateTime departure = ZonedDateTime.now(ZoneOffset.UTC).withMonth(3).withDayOfMonth(30).withHour(12).withMinute(0).withSecond(0).withNano(0);
 

@@ -15,12 +15,11 @@
 package dk.dma.dmiweather.service;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.math.DoubleMath;
-import dk.dma.common.dto.GeoCoordinate;
-import dk.dma.common.dto.JSonWarning;
-import dk.dma.common.util.MathUtil;
-import dk.dma.dmiweather.dto.*;
+import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
+import dk.dma.dmiweather.dto.GridParameterType;
 import dk.dma.dmiweather.grib.*;
+import lombok.Getter;
 import ucar.grib.NoValidGribException;
 import ucar.grib.grib1.*;
 import ucar.grid.GridParameter;
@@ -35,6 +34,7 @@ import java.util.*;
  * @author Klaus Groenbaek
  *         Created 29/03/17.
  */
+@Getter
 public class GribFileWrapper {
 
     public static final float GRIB_NOT_DEFINED = -9999;     // Grib1BinaryDataSection.UNDEFINED
@@ -44,23 +44,33 @@ public class GribFileWrapper {
     private static final int ZONAL_CURRENT = 50;
     private static final int SEA_LEVEL = 82;
     private static final int DENSITY = 89;
+    private static final int WAVE_HEIGHT = 229; //SWH:Significant wave height  [m]
+    private static final int WAVE_DIRECTION = 230; //MWD:Mean wave direction  [degrees]
+    private static final int WAVE_PERIOD = 232; //MWP:Mean wave period  [s]
+
 
     private final Instant date;
-    private final ImmutableMap<GridParameterType, DataProvider> dataProviders;
+    private final ImmutableMap<GridParameterType, AbstractDataProvider> dataProviders;
+    private final Instant creation;
     private final int dataRounding;
     private final int coordinateRouding;
-    private double dx;
-    private double dy;
+    private final double dx;
+    private final double dy;
+    private final Polygon polygon;
+    private final int nx;
+    private final int ny;
+    private volatile boolean old;
 
-    GribFileWrapper(Instant date, File file, int dataRounding, int coordinateRouding) {
+    GribFileWrapper(Instant date, Instant creation, File file, int dataRounding, int coordinateRouding) {
         this.date = date;
+        this.creation = creation;
         this.dataRounding = dataRounding;
         this.coordinateRouding = coordinateRouding;
         dataProviders = ImmutableMap.copyOf(initProviders(file));
 
         double smallestDx = Float.MAX_VALUE;
-        DataProvider found = null;
-        for (DataProvider dataProvider : dataProviders.values()) {
+        AbstractDataProvider found = null;
+        for (AbstractDataProvider dataProvider : dataProviders.values()) {
             if (dataProvider.getDx()  < smallestDx ) {
                 smallestDx = dataProvider.getDx();
                 found = dataProvider;
@@ -69,6 +79,22 @@ public class GribFileWrapper {
 
         dx = found.getDx();
         dy = found.getDy();
+        nx = found.getNx();
+        ny = found.getNy();
+
+        GeometryFactory factory = new GeometryFactory();
+        Coordinate[] coordinates = new Coordinate[5];
+        coordinates[0] = new Coordinate(found.getLo1(), found.getLa1());
+        coordinates[1] = new Coordinate(found.getLo2(), found.getLa1());
+        coordinates[2] = new Coordinate(found.getLo2(), found.getLa2());
+        coordinates[3] = new Coordinate(found.getLo1(), found.getLa2());
+        coordinates[4] = new Coordinate(found.getLo1(), found.getLa1());
+
+        polygon = new Polygon(new LinearRing(new CoordinateArraySequence(coordinates), factory), new LinearRing[]{}, factory);
+    }
+
+    Set<GridParameterType> getParameterTypes() {
+        return dataProviders.keySet();
     }
 
     /**
@@ -76,8 +102,8 @@ public class GribFileWrapper {
      * @return an Immutable map of providers
      * @param file the GRIB file
      */
-    private Map<GridParameterType, DataProvider> initProviders(File file) {
-        HashMap<GridParameterType, DataProvider> map = new HashMap<>();
+    private Map<GridParameterType, AbstractDataProvider> initProviders(File file) {
+        HashMap<GridParameterType, AbstractDataProvider> map = new HashMap<>();
 
         try {
             RandomAccessFile raf = new RandomAccessFile(file.getAbsolutePath(), "r");
@@ -116,134 +142,58 @@ public class GribFileWrapper {
         return map;
     }
 
-    GridResponse getData(GridRequest request, boolean removeEmpty, boolean gridMetrics)  {
-
-        GeoCoordinate northWest = request.getNorthWest();
-        GeoCoordinate southEast = request.getSouthEast();
-
-        for (DataProvider next : dataProviders.values()) {
-            next.validate(northWest, southEast);
-        }
-
-        List<GridParameterType> parameterTypes = request.getParameters().getParamTypes();
-
-        // If there is no scaling information, we use the native resolution, if scaling info (Nx,Ny) is provided we use it calculate lat/lon spacing and lat/lon offset
-        // so we can generate the sampled coordinates
-        double lonDistance = southEast.getLon() - northWest.getLon();
-        double latDistance = northWest.getLat() - southEast.getLat();
-        int nativeNx = (int) Math.round(lonDistance / dx) +1;
-        int nativeNy = (int) Math.round(latDistance / dy) +1;
-        int Nx, Ny;
-        double latSpacing, latOffset;
-        double lonSpacing, lonOffset;
-        if (request.getNx() == null) {
-            // use resolution of the smallest data series
-            Nx = nativeNx;
-            Ny = nativeNy;
-            latOffset = 0;
-            lonOffset = 0;
-            lonSpacing = dx;
-            latSpacing = dy;
-        } else {
-            // if the desired Nx, Ny is higher than the native resolution, we default to the native resolution
-
-            if (nativeNx < request.getNx() || nativeNy < request.getNy()) {
-                Nx = nativeNx;
-                Ny = nativeNy;
-            } else {
-                Nx = request.getNx();
-                Ny = request.getNy();
-            }
-
-            // calculate the spacing between points and the offset to the first point, there is a special case if a point in the first and
-            // last column/row can be used, this is the 9 to 5 down sampling
-            latSpacing = (latDistance + this.dy) / Ny;
-            double latRemainder = latDistance % (Ny - 1);
-
-            if (DoubleMath.fuzzyEquals(latRemainder, 0, 0.00001)) {
-                // this is the 9 to 5 case, where we use 0,2,4,6,8 with a spacing of 2
-                latOffset = 0;
-                latSpacing = latDistance / (Ny - 1);
-            } else {
-                latOffset = (latDistance % (Ny - 1)) / 2; // the leftover should be split in two for padding on either side
-            }
-
-            lonSpacing = (lonDistance + this.dx) / Nx;
-            double lonRemainder = lonDistance % (Nx - 1);
-
-            if (DoubleMath.fuzzyEquals(lonRemainder, 0, 0.00001)) {
-                lonOffset = 0;
-                lonSpacing = lonDistance / (Nx - 1);
-            } else {
-                lonOffset = (lonDistance % (Nx - 1)) / 2;
-            }
-        }
-
-        ArrayList<GridDataPoint> points = new ArrayList<>(Nx * Ny);
-        for (int y = 0; y < Ny; y++) {
-            for (int x = 0; x < Nx; x++) {
-                double lon = northWest.getLon() + x * dx;
-                double lat = southEast.getLat() + y * dy;
-                if (coordinateRouding != -1) {
-                    lon = MathUtil.round(lon, coordinateRouding);
-                    lat = MathUtil.round(lat, coordinateRouding);
-                }
-                points.add(new GridDataPoint().setCoordinate(new GeoCoordinate(lon, lat)));
-            }
-        }
-
-        for (GridParameterType type : parameterTypes) {
-            float[] data = dataProviders.get(type).getData(northWest, southEast, Nx, Ny, lonSpacing, lonOffset, latSpacing, latOffset);
-            for (int i = 0; i < points.size(); i++) {
-                GridDataPoint point = points.get(i);
-                if (data[i] != GRIB_NOT_DEFINED) {
-                    point.setData(type, data[i]);
-                }
-            }
-        }
-        if (removeEmpty) {
-            points.removeIf(p -> !p.hasValues());
-        }
-
-        GridResponse response = new GridResponse().setPoints(points).setForecastDate(date).setQueryTime(Instant.now());
-
-        if(request.getParameters().isWave()) {
-            WarningMessage msg = WarningMessage.MISSING_DATA;
-            response.setWarning(new JSonWarning().setId(msg.getId()).setMessage(msg.getMessage()).setDetails("Wave information is currently not provided."));
-        }
-        if (gridMetrics) {
-            response.setDx(lonSpacing);
-            response.setDy(latSpacing);
-            response.setNx(Nx);
-            response.setNy(Ny);
-            if (!removeEmpty) {
-                GeoCoordinate first = points.get(0).getCoordinate();
-                GeoCoordinate last = points.get(points.size() - 1).getCoordinate();
-                response.setNorthWest(new GeoCoordinate(first.getLon(), last.getLat()));
-                response.setSouthEast(new GeoCoordinate(last.getLon(), first.getLat()));
-            }
-        }
-        return response;
-    }
-
     private List<DataProviderFactory> configureFactories(Grib1Data gribData, HashMap<Integer, ParameterAndRecord> lookup) {
 
         List<DataProviderFactory> factories = new ArrayList<>();
 
-        factories.add(new MeridionalZonalFactory(gribData, lookup.get(MERIDIONAL_WIND), lookup.get(ZONAL_WIND),
-                GridParameterType.WindDirection, GridParameterType.WindSpeed, dataRounding));
+        ParameterAndRecord meridionalWind = lookup.get(MERIDIONAL_WIND);
+        ParameterAndRecord zonalWind = lookup.get(ZONAL_WIND);
+        if (meridionalWind != null && zonalWind != null) {
+            factories.add(new MeridionalZonalFactory(gribData, meridionalWind, zonalWind,
+                    GridParameterType.WindDirection, GridParameterType.WindSpeed, dataRounding));
+        }
 
-        factories.add(new MeridionalZonalFactory(gribData, lookup.get(MERIDIONAL_CURRENT), lookup.get(ZONAL_CURRENT),
-                GridParameterType.CurrentDirection, GridParameterType.CurrentSpeed, dataRounding));
+        ParameterAndRecord meridionalCurrent = lookup.get(MERIDIONAL_CURRENT);
+        ParameterAndRecord zonalCurrent = lookup.get(ZONAL_CURRENT);
+        if (meridionalCurrent != null && zonalCurrent != null) {
+            factories.add(new MeridionalZonalFactory(gribData, meridionalCurrent, zonalCurrent,
+                    GridParameterType.CurrentDirection, GridParameterType.CurrentSpeed, dataRounding));
+        }
 
-        factories.add(new SimpleDataProviderFactory(gribData, lookup.get(SEA_LEVEL), GridParameterType.SeaLevel, dataRounding));
+        ParameterAndRecord sealevel = lookup.get(SEA_LEVEL);
+        if (sealevel != null) {
+            factories.add(new SimpleDataProviderFactory(gribData, sealevel, GridParameterType.SeaLevel, dataRounding));
+        }
         ParameterAndRecord densityParam = lookup.get(DENSITY);
         if (densityParam != null) {
             // old test files need to be updated since they don't have density
             factories.add(new SimpleDataProviderFactory(gribData, densityParam, GridParameterType.Density, dataRounding));
         }
 
+        ParameterAndRecord waveHeight = lookup.get(WAVE_HEIGHT);
+        if (waveHeight != null) {
+            factories.add(new SimpleDataProviderFactory(gribData, waveHeight, GridParameterType.WaveHeight, dataRounding));
+        }
+
+        ParameterAndRecord waveDirection = lookup.get(WAVE_DIRECTION);
+        if (waveDirection != null) {
+            factories.add(new SimpleDataProviderFactory(gribData, waveDirection, GridParameterType.WaveDirection, dataRounding));
+        }
+
+        ParameterAndRecord wavePeriod = lookup.get(WAVE_PERIOD);
+        if (wavePeriod != null) {
+            factories.add(new SimpleDataProviderFactory(gribData, wavePeriod, GridParameterType.WavePeriod, dataRounding));
+        }
+
+
         return factories;
     }
 
+    Geometry getArea() {
+        return polygon;
+    }
+
+    void markAsOld() {
+        old = true;
+    }
 }

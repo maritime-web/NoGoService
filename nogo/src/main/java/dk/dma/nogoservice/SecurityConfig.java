@@ -60,12 +60,12 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter  {
         super.configure(http);
         http
                 .addFilterBefore(new CORSFilter(), ChannelProcessingFilter.class)
-                .csrf().disable()
-                .requestMatchers()
-                .antMatchers("/**")
+                .csrf().disable().requestMatchers().antMatchers("/**")
                 .and()
                 .authorizeRequests()
                 .antMatchers("/health").permitAll()
+                .antMatchers("/swagger*").permitAll()
+                .antMatchers("/v2/*").permitAll()
                 .anyRequest().authenticated();
     }
 

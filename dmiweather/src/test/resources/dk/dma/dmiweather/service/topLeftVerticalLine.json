@@ -1,6 +1,13 @@
 {
-  "forecastDate" : "2017-03-30T12:00:00.000+0000",
-  "queryTime" : "2017-04-04T11:21:22.000+0000",
+  "forecastDate" : 1490875200.000000000,
+  "forecasts" : [ {
+    "parameters" : {
+      "wind" : true
+    },
+    "forecastDate" : 1490875200.000000000,
+    "creationDate" : 1493667453.374000000
+  } ],
+  "queryTime" : 1493667456.499000000,
   "points" : [ {
     "coordinate" : {
       "lon" : 9.0,

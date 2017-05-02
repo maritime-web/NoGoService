@@ -29,12 +29,10 @@ public interface DataProvider {
      * @param nx the number of columns
      * @param ny the the number of rows
      * @param lonSpacing the spacing between points on the x-axis
-     * @param lonOffset the offset before the first point on the x-axis
      * @param latSpacing the spacing between points on the y-axis
-     * @param latOffset the offset before the first point on the y-axis
      * @return a one dimensional array for the data vules in the grid
      */
-    float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int nx, int ny, double lonSpacing, double lonOffset, double latSpacing, double latOffset);
+    float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int nx, int ny, double lonSpacing, double latSpacing);
 
     /**
      * The number of columns modeled by this grid

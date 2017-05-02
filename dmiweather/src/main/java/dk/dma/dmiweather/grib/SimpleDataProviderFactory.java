@@ -48,8 +48,8 @@ public class SimpleDataProviderFactory implements DataProviderFactory {
     }
 
     @Override
-    public Map<GridParameterType, DataProvider> create() {
-        HashMap<GridParameterType, DataProvider> map = new HashMap<>();
+    public Map<GridParameterType, AbstractDataProvider> create() {
+        HashMap<GridParameterType, AbstractDataProvider> map = new HashMap<>();
         map.put(parameterType, new SimpleDataProvider(parameterAndRecord, grib1Data, dataRounding));
         return map;
     }

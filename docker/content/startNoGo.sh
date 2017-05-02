@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-java -jar nogo.war
+java -jar -Xmx1024m nogo.war

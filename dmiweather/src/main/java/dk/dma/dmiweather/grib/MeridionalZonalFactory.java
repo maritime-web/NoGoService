@@ -55,9 +55,9 @@ public class MeridionalZonalFactory implements DataProviderFactory {
     }
 
     @Override
-    public Map<GridParameterType, DataProvider> create()  {
+    public Map<GridParameterType, AbstractDataProvider> create()  {
 
-        HashMap<GridParameterType, DataProvider> map = new HashMap<>();
+        HashMap<GridParameterType, AbstractDataProvider> map = new HashMap<>();
         map.put(directionType, new DirectionDataProvider(this.meridional, zonal, data, dataRounding));
         map.put(speedType, new SpeedDataProvider(this.meridional, zonal, data, dataRounding));
         return map;

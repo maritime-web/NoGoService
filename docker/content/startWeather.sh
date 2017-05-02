@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-java -jar dmiweather.war
+java -jar -Xmx1024m dmiweather.war

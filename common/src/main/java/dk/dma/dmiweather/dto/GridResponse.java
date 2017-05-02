@@ -31,7 +31,15 @@ import java.util.List;
 @Accessors(chain = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GridResponse {
+    /**
+     * Since data can come from multiple forecasts, this value is not deprecated
+     */
+    @Deprecated
     private Instant forecastDate;
+    /**
+     * Date information about each of the data sets which provided data for the forecast
+     */
+    private List<ForecastInfo> forecasts;
     private Instant queryTime;
     private List<GridDataPoint> points;
     private JSonWarning warning;

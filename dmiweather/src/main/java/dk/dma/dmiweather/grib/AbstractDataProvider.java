@@ -20,6 +20,7 @@ import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.exception.APIException;
 import dk.dma.common.exception.ErrorMessage;
 import dk.dma.common.util.MathUtil;
+import lombok.Getter;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import ucar.grib.grib1.Grib1GDSVariables;
@@ -37,6 +38,7 @@ import static dk.dma.dmiweather.service.GribFileWrapper.GRIB_NOT_DEFINED;
  *         Created 04/04/17.
  */
 @Slf4j
+@Getter
 public abstract class AbstractDataProvider implements DataProvider {
     private final int dataRounding;
     private final double dx;
@@ -65,7 +67,7 @@ public abstract class AbstractDataProvider implements DataProvider {
     }
 
     /**
-     * Test constructor allowing you to set the grid metrics directly whitout needing a grib file
+     * Test constructor allowing you to set the grid metrics directly without needing a grib file
      */
     @VisibleForTesting
     protected AbstractDataProvider(int dataRounding, float dx, float dy, int ny, int nx, float lo1, float la2, float la1, float lo2) {
@@ -81,7 +83,7 @@ public abstract class AbstractDataProvider implements DataProvider {
     }
 
     @Override
-    public float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int Nx, int Ny, double lonSpacing, double lonOffset, double latSpacing, double latOffset) {
+    public float[] getData(GeoCoordinate northWest, GeoCoordinate southEast, int Nx, int Ny, double lonSpacing, double latSpacing) {
 
         validate(northWest, southEast);
 
@@ -104,13 +106,11 @@ public abstract class AbstractDataProvider implements DataProvider {
 
             if (Nx > this.Nx) {
                 // scaling up
-                lonOffset = -0.00001f;
-                latOffset = -0.00001f;
                 float[] data = roundAndCache();
                 for (int row = 0; row < Ny; row++) {
-                    int y = startY + (int) Math.round(Math.floor(row * latSpacing - latOffset));
+                    int y = startY + (int) Math.round(Math.floor(row * latSpacing));
                     for (int col = 0; col < Nx; col++) {
-                        int x = startX + (int) Math.round(Math.floor(col * lonSpacing - lonOffset));
+                        int x = startX + (int) Math.round(Math.floor(col * lonSpacing));
 
                         float datum = data[y * this.Nx + x];
                         grid[row * Nx + col] = datum;
@@ -122,10 +122,10 @@ public abstract class AbstractDataProvider implements DataProvider {
                 float[] data = roundAndCache();
 
                 for (int row = 0; row < Ny; row++) {
-                    int y = startY + (int ) Math.round(row * latSpacing/this.dy + latOffset);
+                    int y = startY + (int ) Math.round(row * latSpacing/this.dy);
                     for (int col = 0; col < Nx; col++) {
 
-                        int x = startX + (int) Math.round(col * lonSpacing/this.dx + lonOffset);
+                        int x = startX + (int) Math.round(col * lonSpacing/this.dx);
                         float datum = data[y * this.Nx + x];
 
                         if (datum == GRIB_NOT_DEFINED) {
@@ -218,26 +218,6 @@ public abstract class AbstractDataProvider implements DataProvider {
 
     public abstract float[] getData();
 
-    @Override
-    public int getNx() {
-        return Nx;
-    }
-
-    @Override
-    public int getNy() {
-        return Ny;
-    }
-
-
-    @Override
-    public double getDx() {
-        return dx;
-    }
-
-    @Override
-    public double getDy() {
-        return dy;
-    }
 
     @Override
     public void validate(GeoCoordinate northWest, GeoCoordinate southEast) {

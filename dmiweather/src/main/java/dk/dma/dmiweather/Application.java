@@ -15,6 +15,7 @@
 package dk.dma.dmiweather;
 
 import com.google.common.base.Predicates;
+import dk.dma.dmiweather.service.ForecastConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +26,9 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Klaus Groenbaek
@@ -51,4 +55,14 @@ public class Application extends WebMvcConfigurerAdapter {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**");
     }
+
+    /**
+     * The list of forecasts which will be pulled from DMIs FTP server
+     * @return a list of ForecastConfiguration which can be autowired (into the FTPLoader)
+     */
+    @Bean
+    public List<ForecastConfiguration> forecasts() {
+        return Arrays.asList(ForecastConfiguration.values());
+    }
+
 }

@@ -14,10 +14,24 @@
  */
 package dk.dma.dmiweather.dto;
 
+import lombok.Data;
+import lombok.experimental.Accessors;
+
+import java.time.Instant;
+
 /**
  * @author Klaus Groenbaek
- *         Created 30/03/17.
+ *         Created 01/05/17.
  */
-public enum GridParameterType {
-    WindDirection, WindSpeed, WaveHeight, WaveDirection, WavePeriod, CurrentDirection, CurrentSpeed, Density, SeaLevel
+@Data
+@Accessors(chain = true)
+public class WeatherAreaInfo {
+    private String name;
+    private String wkt;
+    private double dx;
+    private double dy;
+    private int nx;
+    private int ny;
+    private Instant start;
+    private Instant end;
 }

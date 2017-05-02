@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.nio.file.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -46,25 +47,20 @@ public class FTPLoader {
     /**
      * location of the GRIB1 file2 with danish weather, the folder also contains the Baltic and North sea
      */
-    private static final String DANISH_WEATHER_FOLDER = "/mhri/EfficientSea/metocean_shelf";
     private static final Pattern FOLDER_PATTERN = Pattern.compile("\\d{10}");
-    static final Pattern DENMARK_FILE_PATTERN = Pattern.compile("DMI_metocean_DK\\.(\\d{10})\\.grb");
-
-    private static final int FILE_COUNT = 121;
+    private static final int MAX_TRIES = 4;
     private final WeatherService gridWeatherService;
 
     private final String tempDirLocation;
-    /**
-     * Use a known temp dir so we don't have to download the files from FTP when developing
-     */
-    private String newestDirectoryName;
+    private final List<ForecastConfiguration> configurations;
     private File lastTempDir;
     private String hostname = "ftp.dmi.dk";
 
     @Autowired
-    public FTPLoader(WeatherService gridWeatherService, @Value("${ftploader.tempdir:#{null}}") String tempDirLocation) {
+    public FTPLoader(WeatherService gridWeatherService, @Value("${ftploader.tempdir:#{null}}") String tempDirLocation, List<ForecastConfiguration> configurations) {
         this.gridWeatherService = gridWeatherService;
         this.tempDirLocation = (tempDirLocation != null ? tempDirLocation : System.getProperty("java.io.tmpdir"));
+        this.configurations = configurations;
     }
 
     /**
@@ -80,43 +76,30 @@ public class FTPLoader {
             if (client.login("anonymous", "")) {
                 client.enterLocalPassiveMode();
                 client.setFileType(FTP.BINARY_FILE_TYPE);
-                if (client.changeWorkingDirectory(DANISH_WEATHER_FOLDER)) {
-                    FTPFile[] ftpDirs = client.listDirectories();
-                    Arrays.sort(ftpDirs, new FileAgeComparator());
-                    FTPFile newestDirectory = ftpDirs[ftpDirs.length - 1];
-                    if (client.changeWorkingDirectory(newestDirectory.getName())) {
+                for (ForecastConfiguration configuration : configurations) {
+                    // DMI creates a Newest link once all files have been created
+                    if (client.changeWorkingDirectory(configuration.getFolder() + "/Newest")) {
+                        String workingDirectory = new File(client.printWorkingDirectory()).getName();
+
                         FTPFile[] listFiles = client.listFiles();
-                        List<FTPFile> files = Arrays.stream(listFiles).filter(f -> DENMARK_FILE_PATTERN.matcher(f.getName()).matches()).collect(Collectors.toList());
-                        if (files.size() == FILE_COUNT) {
-                            // we have a full set of files 5 day of 24 hours + 1 hour,
-                            // this is Important since FTP is not transaction and we could read while files are being copied
-                            if (!newestDirectory.getName().equals(newestDirectoryName)) {
-                                // this is the first time we encounter this directory after it has all the files
-                                try {
-                                    List<File> localFiles = transferFilesIfNeeded(client, newestDirectory.getName(), files);
-                                    gridWeatherService.newFiles(localFiles);
-                                    File newTempDir = localFiles.get(0).getParentFile();
-                                    if (lastTempDir != null && newTempDir.equals(lastTempDir)) {
-                                        deleteRecursively(lastTempDir);
-                                        lastTempDir = newTempDir;
-                                    }
-                                    newestDirectoryName = newestDirectory.getName();
-                                } catch (IOException e) {
-                                    log.warn("Unable to get new weather files from DMI", e);
-                                }
-                            } else {
-                                log.info("Newest directory is still named {}", newestDirectory.getName());
+                        List<FTPFile> files = Arrays.stream(listFiles).filter(f -> configuration.getFilePattern().matcher(f.getName()).matches()).collect(Collectors.toList());
+
+                        try {
+                            Map<File, Instant> localFiles = transferFilesIfNeeded(client, workingDirectory, files);
+                            gridWeatherService.newFiles(localFiles, configuration);
+                            File newTempDir = localFiles.keySet().iterator().next().getParentFile();
+                            if (lastTempDir != null && newTempDir.equals(lastTempDir)) {
+                                deleteRecursively(lastTempDir);
+                                lastTempDir = newTempDir;
                             }
-                        } else {
-                            log.warn("Skipping new directory because it only has {} files", files.size());
+                        } catch (IOException e) {
+                            log.warn("Unable to get new weather files from DMI", e);
                         }
+
                     } else {
                         gridWeatherService.setErrorMessage(ErrorMessage.FTP_PROBLEM);
-                        log.error("Unable to change directory to {}", newestDirectory.getName());
+                        log.error("Unable to change ftp directory to {}", configuration.getFolder());
                     }
-                } else {
-                    gridWeatherService.setErrorMessage(ErrorMessage.FTP_PROBLEM);
-                    log.error("Unable to change ftp directory to {}", DANISH_WEATHER_FOLDER);
                 }
             } else {
                 gridWeatherService.setErrorMessage(ErrorMessage.FTP_PROBLEM);
@@ -129,13 +112,13 @@ public class FTPLoader {
             gridWeatherService.setErrorMessage(ErrorMessage.FTP_PROBLEM);
             log.error("Unable to update weather files from DMI", e);
         }
-
     }
 
     /**
      * Copied the files from DMIs ftp server to the local machine
+     * @return a Map with a local file and the time the file was created on the FTP server
      */
-    private List<File> transferFilesIfNeeded(FTPClient client, String directoryName, List<FTPFile> files) throws IOException {
+    private Map<File, Instant> transferFilesIfNeeded(FTPClient client, String directoryName, List<FTPFile> files) throws IOException {
 
         File current = new File(tempDirLocation, directoryName);
         if (lastTempDir == null) {
@@ -162,7 +145,7 @@ public class FTPLoader {
 
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        List<File> transferred = new ArrayList<>();
+        Map<File, Instant> transferred = new HashMap<>();
         for (FTPFile file : files) {
             File tmp = new File(current, file.getName());
             if (tmp.exists()) {
@@ -175,7 +158,7 @@ public class FTPLoader {
                 } else {
                     // If the file has the right size we assume it was copied correctly (otherwise we needed to hash them)
                     log.info("Reusing already downloaded version of {}", tmp.getName());
-                    transferred.add(tmp);
+                    transferred.put(tmp, file.getTimestamp().toInstant());
                     continue;
                 }
             }
@@ -183,14 +166,21 @@ public class FTPLoader {
                 log.info("downloading {}", tmp.getName());
 
                 try (FileOutputStream fout = new FileOutputStream(tmp)) {
-                    // must be set every time otherwise we will get ASCII substitution (the JavaDoc for the method is wrong or the DMI behaves strangely)
-                    client.retrieveFile(file.getName(), fout);
+                    // this often fails with java.net.ConnectException: Operation timed out
+                    int count = 0;
+                    while (count++ < MAX_TRIES)
+                    try {
+                        client.retrieveFile(file.getName(), fout);
+                        break;
+                    } catch (IOException e) {
+                        log.warn(String.format("Filed to transfer file %s, try number %s", file.getName(), count), e);
+                    }
                 }
             } else {
                 throw new IOException("Unable to create temp file on disk.");
             }
 
-            transferred.add(tmp);
+            transferred.put(tmp, file.getTimestamp().toInstant());
         }
         log.info("transferred weather files in {} ms", stopwatch.stop().elapsed(TimeUnit.MILLISECONDS));
         return transferred;
@@ -198,6 +188,7 @@ public class FTPLoader {
 
     private static void deleteRecursively(File lastTempDir) throws IOException {
         Path rootPath = lastTempDir.toPath();
+        //noinspection ResultOfMethodCallIgnored
         Files.walk(rootPath, FileVisitOption.FOLLOW_LINKS)
                 .sorted(Comparator.reverseOrder())  // flips the tree so leefs are deleted first
                 .map(Path::toFile)
@@ -206,10 +197,4 @@ public class FTPLoader {
 
     }
 
-    private static class FileAgeComparator implements Comparator<FTPFile>, Serializable {
-        @Override
-        public int compare(FTPFile o1, FTPFile o2) {
-            return o1.getTimestamp().compareTo(o2.getTimestamp());
-        }
-    }
 }

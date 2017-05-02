@@ -28,5 +28,5 @@ public interface DataProviderFactory {
      * Create one or more dataProviders
      * @return a map of providers
      */
-    Map<GridParameterType, DataProvider> create();
+    Map<GridParameterType, AbstractDataProvider> create();
 }
