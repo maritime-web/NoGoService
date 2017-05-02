@@ -14,8 +14,7 @@
  */
 package dk.dma.dmiweather.service;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import dk.dma.common.dto.GeoCoordinate;
@@ -44,28 +43,24 @@ class ForecastContainer {
 
     @GuardedBy("$lock")
     private final Map<ForecastConfiguration, GribFileWrapper> files = new HashMap<>();
+    private final Instant instant;
     private final int coordinateRounding;
 
-    ForecastContainer(int coordinateRounding) {
+    ForecastContainer(Instant instant, int coordinateRounding) {
+        this.instant = instant;
         this.coordinateRounding = coordinateRounding;
     }
 
     GridResponse getData(GridRequest request, boolean removeEmpty, boolean gridMetrics) {
 
-        Map<GribFileWrapper, Set<GridParameterType>> sources = findSources(request);
+        Map<GridParameterType, GribFileWrapper> sources = findSources(request);
 
         if (sources.isEmpty()) {
             throw new APIException(ErrorMessage.OUTSIDE_GRID, "There is no grid that contains the entire are, try with a smaller area.");
         }
 
-        double smallestDx = Float.MAX_VALUE;
-        GribFileWrapper smallestResolution = null;
-        for (GribFileWrapper source : sources.keySet()) {
-            if (source.getDx() < smallestDx) {
-                smallestResolution = source;
-                smallestDx = source.getDx();
-            }
-        }
+        @SuppressWarnings("ConstantConditions") // we have already check if the map was empty
+        GribFileWrapper smallestResolution = sources.values().stream().sorted(GribFileWrapper.SMALLEST_RESOLUTION).findFirst().get();
 
         double dx = smallestResolution.getDx();
         double dy = smallestResolution.getDy();
@@ -119,22 +114,18 @@ class ForecastContainer {
             }
         }
 
-        ArrayList<ForecastInfo> forecasts = new ArrayList<>();
-        Set<GridParameterType> missingParameters = request.getParameters().getParamTypes();
-        for (Map.Entry<GribFileWrapper, Set<GridParameterType>> entry : sources.entrySet()) {
-            GribFileWrapper file = entry.getKey();
-            Collection<GridParameterType> parameterTypes = entry.getValue();
-            forecasts.add(new ForecastInfo().setForecastDate(file.getDate()).setCreationDate(file.getCreation()).setParameters(GridParameters.parametersFromTypes(parameterTypes)));
-            missingParameters.removeAll(parameterTypes);
 
 
-            for (GridParameterType type : parameterTypes) {
-                float[] data = file.getDataProviders().get(type).getData(northWest, southEast, Nx, Ny, lonSpacing, latSpacing);
-                for (int i = 0; i < points.size(); i++) {
-                    GridDataPoint point = points.get(i);
-                    if (data[i] != GRIB_NOT_DEFINED) {
-                        point.setData(type, data[i]);
-                    }
+        // process the data
+        for (Map.Entry<GridParameterType, GribFileWrapper> entry : sources.entrySet()) {
+            GribFileWrapper file = entry.getValue();
+            GridParameterType type = entry.getKey();
+
+            float[] data = file.getDataProviders().get(type).getData(northWest, southEast, Nx, Ny, lonSpacing, latSpacing);
+            for (int i = 0; i < points.size(); i++) {
+                GridDataPoint point = points.get(i);
+                if (data[i] != GRIB_NOT_DEFINED) {
+                    point.setData(type, data[i]);
                 }
             }
         }
@@ -142,10 +133,25 @@ class ForecastContainer {
         if (removeEmpty) {
             points.removeIf(p -> !p.hasValues());
         }
+
+        ArrayList<ForecastInfo> forecasts = new ArrayList<>();
+        Set<GridParameterType> missingParameters = request.getParameters().getParamTypes();
+
+        // find the parameter which come from the same File, so we can group forecast parameters
+        SetMultimap<GribFileWrapper, GridParameterType> parametersByFile = groupByFile(sources);
+        for (GribFileWrapper file : parametersByFile.keySet()) {
+            Set<GridParameterType> parametersInFile = parametersByFile.get(file);
+            forecasts.add(new ForecastInfo().setName(file.getConfiguration().name()).setCreationDate(file.getCreation())
+                    .setParameters(GridParameters.parametersFromTypes(parametersInFile)));
+
+            missingParameters.removeAll(parametersInFile);
+        }
+
         GridResponse response = new GridResponse().setPoints(points).setForecasts(forecasts).setQueryTime(Instant.now());
 
+
         // set the deprecate time to the first forecast time
-        response.setForecastDate(forecasts.get(0).getForecastDate());
+        response.setForecastDate(instant);
 
         if (!missingParameters.isEmpty()) {
             WarningMessage msg = WarningMessage.MISSING_DATA;
@@ -168,26 +174,42 @@ class ForecastContainer {
         return response;
     }
 
-    @Synchronized
-    private Map<GribFileWrapper, Set<GridParameterType>> findSources(GridRequest request) {
+    /**
+     * Reversed the map, but since several parameters can come from the same GRIB file, we get a multiMap
+     */
+    private SetMultimap<GribFileWrapper, GridParameterType> groupByFile(Map<GridParameterType, GribFileWrapper> sources) {
+        SetMultimap<GribFileWrapper, GridParameterType> multiMap = HashMultimap.create();
+        for (Map.Entry<GridParameterType, GribFileWrapper> entry : sources.entrySet()) {
+            multiMap.put(entry.getValue(), entry.getKey());
+        }
+        return multiMap;
+    }
 
+    @Synchronized
+    private Map<GridParameterType, GribFileWrapper> findSources(GridRequest request) {
+
+        // areas can overlap, create a list multi map with candidate for each parameter type
         Geometry requestArea = toGeometry(request);
         Collection<GribFileWrapper> values = files.values();
-        Set<GridParameterType> set = request.getParameters().getParamTypes();
-        Map<GribFileWrapper, Set<GridParameterType>> map = new HashMap<>();
-        for (GribFileWrapper gribFile : values) {
-            if (gribFile.getArea().contains(requestArea)) {
-                Sets.SetView<GridParameterType> intersection = Sets.intersection(set, gribFile.getParameterTypes());
-                if (!intersection.isEmpty()) {
-                    map.put(gribFile, intersection);
+        ListMultimap<GridParameterType, GribFileWrapper> byType = ArrayListMultimap.create();
+        for (GridParameterType parameterType : request.getParameters().getParamTypes()) {
+            for (GribFileWrapper gribFile : values) {
+                if (gribFile.getArea().contains(requestArea)) {
+                    if (gribFile.getParameterTypes().contains(parameterType)) {
+                        byType.put(parameterType, gribFile);
+                    }
                 }
-
-            }
-            if (set.isEmpty()) {
-                break;
             }
         }
-        return map;
+
+        // find the highest resolution
+        Map<GridParameterType, GribFileWrapper> result = new HashMap<>();
+        for (Map.Entry<GridParameterType, Collection<GribFileWrapper>> entry : byType.asMap().entrySet()) {
+
+            Optional<GribFileWrapper> optional = entry.getValue().stream().sorted(GribFileWrapper.SMALLEST_RESOLUTION).findFirst();
+            optional.ifPresent(g-> result.put(entry.getKey(), g));
+        }
+        return result;
     }
 
     private Geometry toGeometry(GridRequest request) {

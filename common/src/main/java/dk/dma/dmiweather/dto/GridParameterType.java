@@ -14,10 +14,13 @@
  */
 package dk.dma.dmiweather.dto;
 
+import lombok.Getter;
+
 /**
  * @author Klaus Groenbaek
  *         Created 30/03/17.
  */
+@Getter
 public enum GridParameterType {
     WindDirection, WindSpeed, WaveHeight, WaveDirection, WavePeriod, CurrentDirection, CurrentSpeed, Density, SeaLevel
 }

@@ -40,7 +40,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 /**
- * A service that provide different weather data based loaded from GRIB files
+ * A service that provide different weather forecast data extracted from GRIB files, the original fileset was provided by DMI
  * @author Klaus Groenbaek
  *         Created 29/03/17.
  */
@@ -155,9 +155,9 @@ public class WeatherService {
                 String dateString = matcher.group(1);
                 Date date = df.parse(dateString + "+0000");
                 Instant instant = date.toInstant();
-                GribFileWrapper wrapper = new GribFileWrapper(instant, creation, file, dataRounding, coordinateRounding);
+                GribFileWrapper wrapper = new GribFileWrapper(configuration, creation, file, dataRounding, coordinateRounding);
 
-                ForecastContainer forecastData = new ForecastContainer(coordinateRounding);
+                ForecastContainer forecastData = new ForecastContainer(instant, coordinateRounding);
                 ForecastContainer previous = cache.putIfAbsent(instant, forecastData);
                 if (previous != null) {
                     forecastData = previous;

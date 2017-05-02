@@ -28,12 +28,8 @@ import java.time.Instant;
 @Accessors(chain = true)
 public class ForecastInfo {
 
-
-
-
     private GridParameters parameters;
-    private Instant forecastDate;
+    private String name;
     private Instant creationDate;
-
 
 }

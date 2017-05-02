@@ -16,6 +16,7 @@ package dk.dma.dmiweather.controller;
 
 import dk.dma.dmiweather.dto.*;
 import dk.dma.dmiweather.service.WeatherService;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -54,6 +55,7 @@ public class WeatherController {
     }
 
     @GetMapping("/info")
+    @ApiOperation(value = "Provides a list of the areas for which Weather service has information.")
     public WeatherAreaInfos info() {
         return service.info();
     }

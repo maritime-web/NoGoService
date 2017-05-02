@@ -38,6 +38,13 @@ import java.util.*;
 public class GribFileWrapper {
 
     public static final float GRIB_NOT_DEFINED = -9999;     // Grib1BinaryDataSection.UNDEFINED
+    public static final Comparator<GribFileWrapper> SMALLEST_RESOLUTION = new Comparator<GribFileWrapper>() {
+        @Override
+        public int compare(GribFileWrapper o1, GribFileWrapper o2) {
+            return Double.compare(o1.getDx(), o2.getDx());
+        }
+    };
+
     private static final int MERIDIONAL_WIND = 33;
     private static final int ZONAL_WIND = 34;
     private static final int MERIDIONAL_CURRENT = 49;
@@ -49,7 +56,7 @@ public class GribFileWrapper {
     private static final int WAVE_PERIOD = 232; //MWP:Mean wave period  [s]
 
 
-    private final Instant date;
+    private final ForecastConfiguration configuration;
     private final ImmutableMap<GridParameterType, AbstractDataProvider> dataProviders;
     private final Instant creation;
     private final int dataRounding;
@@ -61,8 +68,8 @@ public class GribFileWrapper {
     private final int ny;
     private volatile boolean old;
 
-    GribFileWrapper(Instant date, Instant creation, File file, int dataRounding, int coordinateRouding) {
-        this.date = date;
+    GribFileWrapper(ForecastConfiguration configuration, Instant creation, File file, int dataRounding, int coordinateRouding) {
+        this.configuration = configuration;
         this.creation = creation;
         this.dataRounding = dataRounding;
         this.coordinateRouding = coordinateRouding;
