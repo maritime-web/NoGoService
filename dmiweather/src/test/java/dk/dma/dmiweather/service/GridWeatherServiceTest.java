@@ -40,18 +40,6 @@ import static org.junit.Assert.*;
 @Slf4j
 public class GridWeatherServiceTest {
 
-    @Test
-    public void topLeftHorizontalLine() throws Exception {
-        check(r-> r.setNorthWest(new GeoCoordinate(10.52, 57.5))
-                .setSouthEast(new GeoCoordinate(10.57, 57.5)), "topLeftHorizontalLine.json");
-    }
-
-
-    @Test
-    public void topLeftVerticalLine() throws Exception {
-        check(r-> r.setNorthWest(new GeoCoordinate(9.0, 57.5))
-                .setSouthEast(new GeoCoordinate(9.0, 57.45)), "topLeftVerticalLine.json");
-    }
 
     @Test
     public void topLeftVerticalLine2() throws Exception {
