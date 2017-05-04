@@ -68,54 +68,71 @@ public class FTPLoader {
      */
     @Scheduled(initialDelay = 1000, fixedDelay = 10 * 60 * 1000)
     public void checkFiles() {
-
+        log.info("Checking FTP files at DMI.");
+        FTPClient client = new FTPClient();
         try {
-            log.info("Checking FTP files at DMI.");
-            FTPClient client = new FTPClient();
+            client.setDataTimeout(20 * 1000);
+            client.setBufferSize(1024*1024);
             client.connect(hostname);
             if (client.login("anonymous", "")) {
-                client.enterLocalPassiveMode();
-                client.setFileType(FTP.BINARY_FILE_TYPE);
-                for (ForecastConfiguration configuration : configurations) {
-                    // DMI creates a Newest link once all files have been created
-                    if (client.changeWorkingDirectory(configuration.getFolder() + "/Newest")) {
-                        String workingDirectory = new File(client.printWorkingDirectory()).getName();
-
-                        FTPFile[] listFiles = client.listFiles();
-                        List<FTPFile> files = Arrays.stream(listFiles).filter(f -> configuration.getFilePattern().matcher(f.getName()).matches()).collect(Collectors.toList());
-
-                        try {
-                            Map<File, Instant> localFiles = transferFilesIfNeeded(client, workingDirectory, files);
-                            gridWeatherService.newFiles(localFiles, configuration);
-                            File newTempDir = localFiles.keySet().iterator().next().getParentFile();
-                            if (lastTempDir != null && newTempDir.equals(lastTempDir)) {
-                                deleteRecursively(lastTempDir);
-                                lastTempDir = newTempDir;
+                try {
+                    client.enterLocalPassiveMode();
+                    client.setFileType(FTP.BINARY_FILE_TYPE);
+                    for (ForecastConfiguration configuration : configurations) {
+                        // DMI creates a Newest link once all files have been created
+                        if (client.changeWorkingDirectory(configuration.getFolder() + "/Newest")) {
+                            if (client.getReplyCode() != 250) {
+                                log.error("Did not get reply 250 as expected, got {} ", client.getReplyCode());
                             }
-                        } catch (IOException e) {
-                            log.warn("Unable to get new weather files from DMI", e);
-                        }
+                            String workingDirectory = new File(client.printWorkingDirectory()).getName();
 
-                    } else {
-                        gridWeatherService.setErrorMessage(ErrorMessage.FTP_PROBLEM);
-                        log.error("Unable to change ftp directory to {}", configuration.getFolder());
+                            FTPFile[] listFiles = client.listFiles();
+                            List<FTPFile> files = Arrays.stream(listFiles).filter(f -> configuration.getFilePattern().matcher(f.getName()).matches()).collect(Collectors.toList());
+
+                            try {
+                                Map<File, Instant> localFiles = transferFilesIfNeeded(client, workingDirectory, files);
+                                gridWeatherService.newFiles(localFiles, configuration);
+                                File newTempDir = localFiles.keySet().iterator().next().getParentFile();
+                                if (lastTempDir != null && newTempDir.equals(lastTempDir)) {
+                                    deleteRecursively(lastTempDir);
+                                    lastTempDir = newTempDir;
+                                }
+                            } catch (IOException e) {
+                                log.warn("Unable to get new weather files from DMI", e);
+                            }
+
+                        } else {
+                            gridWeatherService.setErrorMessage(ErrorMessage.FTP_PROBLEM);
+                            log.error("Unable to change ftp directory to {}", configuration.getFolder());
+                        }
+                    }
+                } finally {
+                    try {
+                        client.logout();
+                    } catch (IOException e) {
+                        log.info("Failed to logout", e);
                     }
                 }
             } else {
                 gridWeatherService.setErrorMessage(ErrorMessage.FTP_PROBLEM);
                 log.error("Unable to login to {}", hostname);
             }
-            client.logout();
-            client.disconnect();
 
         } catch (IOException e) {
             gridWeatherService.setErrorMessage(ErrorMessage.FTP_PROBLEM);
             log.error("Unable to update weather files from DMI", e);
+        } finally {
+            try {
+                client.disconnect();
+            } catch (IOException e) {
+                log.info("Failed to disconnect", e);
+            }
         }
     }
 
     /**
      * Copied the files from DMIs ftp server to the local machine
+     *
      * @return a Map with a local file and the time the file was created on the FTP server
      */
     private Map<File, Instant> transferFilesIfNeeded(FTPClient client, String directoryName, List<FTPFile> files) throws IOException {
@@ -143,7 +160,6 @@ public class FTPLoader {
             }
         }
 
-
         Stopwatch stopwatch = Stopwatch.createStarted();
         Map<File, Instant> transferred = new HashMap<>();
         for (FTPFile file : files) {
@@ -168,13 +184,15 @@ public class FTPLoader {
                 try (FileOutputStream fout = new FileOutputStream(tmp)) {
                     // this often fails with java.net.ConnectException: Operation timed out
                     int count = 0;
-                    while (count++ < MAX_TRIES)
-                    try {
-                        client.retrieveFile(file.getName(), fout);
-                        break;
-                    } catch (IOException e) {
-                        log.warn(String.format("Filed to transfer file %s, try number %s", file.getName(), count), e);
+                    while (count++ < MAX_TRIES) {
+                        try {
+                            client.retrieveFile(file.getName(), fout);
+                            break;
+                        } catch (IOException e) {
+                            log.warn(String.format("Failed to transfer file %s, try number %s", file.getName(), count), e);
+                        }
                     }
+                    fout.flush();
                 }
             } else {
                 throw new IOException("Unable to create temp file on disk.");

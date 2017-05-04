@@ -19,9 +19,11 @@ import dk.dma.dmiweather.service.WeatherService;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.health.DiskSpaceHealthIndicator;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Map;
 
 /**
  * @author Klaus Groenbaek
@@ -33,6 +35,9 @@ public class WeatherController {
 
 
     private final WeatherService service;
+
+    @Autowired
+    private DiskSpaceHealthIndicator indicator;
 
     @Autowired
     public WeatherController(WeatherService service) {
@@ -60,4 +65,8 @@ public class WeatherController {
         return service.info();
     }
 
+    @GetMapping(value = "/debughealth")
+    public Map debug() {
+        return indicator.health().getDetails();
+    }
 }

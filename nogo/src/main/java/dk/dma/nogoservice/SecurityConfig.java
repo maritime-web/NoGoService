@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
@@ -33,7 +34,7 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
  */
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter  {
+public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
     /**
      * Server is stateless so we have no session authentication strategy
@@ -54,19 +55,26 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter  {
         };
     }
 
+    // Don't requires token for swagger or health endpoint
     @Override
-    protected void configure(HttpSecurity http) throws Exception
-    {
+    public void configure(WebSecurity web) throws Exception {
+        web.ignoring()
+                .antMatchers("/v2/api-docs", "/swagger-resources/**", "/swagger-ui.html", "/webjars/**",
+                        "/health",
+                        "/info" // allow see which areas are supported
+
+                );
+
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
         super.configure(http);
         http
                 .addFilterBefore(new CORSFilter(), ChannelProcessingFilter.class)
                 .csrf().disable().requestMatchers().antMatchers("/**")
                 .and()
                 .authorizeRequests()
-                .antMatchers("/health").permitAll()
-                .antMatchers("/swagger*").permitAll()
-                .antMatchers("/webjars*").permitAll()   // swagger resources are inside webjar
-                .antMatchers("/v2/*").permitAll()
                 .anyRequest().authenticated();
     }
 
