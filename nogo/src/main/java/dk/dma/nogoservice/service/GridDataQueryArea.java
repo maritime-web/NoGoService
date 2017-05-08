@@ -2,7 +2,6 @@ package dk.dma.nogoservice.service;
 
 import com.google.common.base.Stopwatch;
 import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import com.vividsolutions.jts.io.WKTWriter;
 import dk.dma.common.dto.*;
 import dk.dma.dmiweather.dto.*;
@@ -10,6 +9,7 @@ import dk.dma.nogoservice.algo.NoGoMatcher;
 import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.entity.SouthKattegat;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -50,14 +50,15 @@ public abstract class GridDataQueryArea implements QueryArea {
     }
 
     @Override
-    public boolean matches(Geometry area) {
-        return supports.contains(area);
+    public AreaMatch matches(Geometry area) {
+        Geometry intersection = supports.intersection(area);
+        return new AreaMatch(intersection);
     }
 
     @Override
-    public NoGoResponse getNogoAreas(NoGoRequest request) {
+    public CalculatedNoGoArea getNogoAreas(NoGoRequest request) {
 
-        NoGoResponse noGoResponse = new NoGoResponse();
+        CalculatedNoGoArea noGoResponse = new CalculatedNoGoArea();
 
         int requestId = this.nextRequestId.incrementAndGet();
         log.info("processing request {}, input ", requestId, request);
@@ -73,7 +74,11 @@ public abstract class GridDataQueryArea implements QueryArea {
             } catch (JsonErrorException e) {
                 WarningMessage warn = WarningMessage.MISSING_TIDAL_INFO;
                 noGoResponse.setWarning(new JSonWarning().setId(warn.getId()).setMessage(warn.getMessage()).setDetails(e.getJSonError().getMessage()));
-                log.warn("Failed to invoke remote weather service", e);
+                log.warn("Failed to invoke remote weather service: " + e.getMessage());
+            } catch (ResourceAccessException e) {
+                WarningMessage warn = WarningMessage.MISSING_TIDAL_INFO;
+                noGoResponse.setWarning(new JSonWarning().setId(warn.getId()).setMessage(warn.getMessage()).setDetails("Weather service offline"));
+                log.warn("Failed to invoke remote weather service: " + e.getMessage());
             }
         }
         Stopwatch createGrid = Stopwatch.createStarted();
@@ -96,9 +101,12 @@ public abstract class GridDataQueryArea implements QueryArea {
             };
         }
 
-        List<NoGoPolygon> polygons = noGoAlgorithm.getNoGo(grid, noGoMatcher);
+        // The data debugger will display a bitmap of the entire data grid and print the SVG from the vector conversion algorithm
+        //DataDebugger.showAsImage(gridData.getData(), gridData.getNx(), GridData.NO_DATA);
+
+        List<Geometry> polygons = noGoAlgorithm.getNoGo(grid, noGoMatcher, gridData);
         log.info("Nogo grouping {}x{}, request {} in {} ms", grid.size(), grid.get(0).size(), requestId,  nogoCalculation.stop().elapsed(TimeUnit.MILLISECONDS));
-        return noGoResponse.setPolygons(polygons);
+        return noGoResponse.setNogoAreas(polygons);
     }
 
     @Override
@@ -120,6 +128,9 @@ public abstract class GridDataQueryArea implements QueryArea {
         double dx = gridData.getDx();
         int Nx = (int) Math.round(lonDistance / dx) +1;
         int Ny = (int) Math.round(latDistance / dy) +1;
+        // so we don't exceed the area
+        Nx = Math.min(Nx, gridData.getNx());
+        Ny = Math.min(Ny, gridData.getNy());
         float[] data = gridData.getData();
 
         int startY = (int) Math.floor((southEast.getLat() - gridData.getLa1()) / dy);
@@ -153,7 +164,7 @@ public abstract class GridDataQueryArea implements QueryArea {
         coordinates.add(new Coordinate(gridData.getLo1(), gridData.getLa2()));
         coordinates.add(new Coordinate(gridData.getLo1(), gridData.getLa1()));
 
-        return new Polygon(new LinearRing(new CoordinateArraySequence(coordinates.toArray(new Coordinate[5])),factory),new LinearRing[0],factory);
+        return factory.createPolygon(coordinates.toArray(new Coordinate[5]));
     }
 
 }

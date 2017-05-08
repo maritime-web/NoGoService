@@ -12,14 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dk.dma.dmiweather.grib;
+package dk.dma.common.util;
 
+import jankovicsandras.imagetracer.ImageTracer;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
 
 /**
+ * Useful debug utility when you need to visualize the data. Draws an image where the data is renders top left to buttum right
  * @author Klaus Groenbaek
  *         Created 30/03/17.
  */
@@ -47,10 +50,10 @@ public class DataDebugger {
         for (int y = 0; y < grid.length; y++) {
             float[] floats = grid[y];
             for (int x = 0; x < floats.length; x++) {
-                if (x < 10 && y < 10) {
-                    img.getRaster().setPixel(x,y, new int[] {0, 0, 0});
-                    continue;
-                }
+//                if (x < 10 && y < 10) {
+//                    img.getRaster().setPixel(x,y, new int[] {0, 0, 0});
+//                    continue;
+//                }
 
                 Float aFloat = floats[x];
                 if (aFloat != nullValue) {
@@ -61,6 +64,9 @@ public class DataDebugger {
             }
         }
 
+        String s = ImageTracer.imageToSVG(img, getOptions(), getPalette());
+        System.out.println("SVG: " + s);
+
         JLabel jLabel = new JLabel(new ImageIcon(img));
         JPanel jPanel = new JPanel();
         jPanel.add(jLabel);
@@ -69,4 +75,36 @@ public class DataDebugger {
         r.pack();
         r.show();
     }
+
+
+    private static HashMap<String, Float> getOptions() {
+        HashMap<String,Float> options = new HashMap<>();
+        options.put( "ltres", 0.5f ); // Linear error treshold
+        options.put( "qtres", 0.5f ); // Quadratic spline error treshold
+        options.put("roundcoords",1f);
+        options.put("colorsampling",0f);
+        options.put("pathomit",0f);
+        return options;
+    }
+
+    /**
+     * A color pallet where the first color is  green the second blue
+     * @return
+     */
+    private static byte[][] getPalette() {
+        byte[][] palette = new byte[2][4];
+        // green color 42, 168, 73
+        palette[0][0] = -128 + 42;    // R
+        palette[0][1] = -128 + 168;   // G
+        palette[0][2] = -128 + 73;   // B
+        palette[0][3] = 127;    // A
+
+        // blue color 19, 61, 198
+        palette[1][0] = -128 + 19;    // R
+        palette[1][1] = -128 + 61;   // G
+        palette[1][2] = -128 + 198;   // B
+        palette[1][3] = 127;    // A
+        return palette;
+    }
+
 }

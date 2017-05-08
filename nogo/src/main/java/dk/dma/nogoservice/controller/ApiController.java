@@ -14,19 +14,23 @@
  */
 package dk.dma.nogoservice.controller;
 
+import com.google.common.base.Stopwatch;
 import dk.dma.nogoservice.dto.*;
 import dk.dma.nogoservice.service.NoGoService;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Klaus Groenbaek
  *         Created 12/03/17.
  */
 @RestController
+@Slf4j
 public class ApiController {
 
     private final NoGoService noGoService;
@@ -39,14 +43,21 @@ public class ApiController {
     @PostMapping(value = "/area")
     @ApiOperation(value = "Get NoGo area", notes = "Returns structured data for all the NoGo polygons. If time is included the tidal information will be included in the NoGo calculation.")
     public NoGoResponse getNoGoAreas(@Valid @RequestBody NoGoRequest request) {
-        return noGoService.getNoGoAreas(request);
+        Stopwatch timer = Stopwatch.createStarted();
+        NoGoResponse noGoAreas = noGoService.getNoGoAreas(request);
+        log.info("NoGo request processed in {} ms", timer.stop().elapsed(TimeUnit.MILLISECONDS));
+        return noGoAreas;
+
     }
 
     @PostMapping(value = "/area/wkt")
     @ApiOperation(value = "Get NoGo area as WKT", notes = "Returns a single MultiPolygon with all the nogo areas. If time is included the tidal information will be included in the NoGo calculation.")
     public MultiPolygon getNoGoAreasAsWKT(@Valid @RequestBody NoGoRequest request) {
+        Stopwatch timer = Stopwatch.createStarted();
         NoGoResponse nogo = noGoService.getNoGoAreas(request);
+        log.info("NoGo (wkt) request processed in {} ms", timer.stop().elapsed(TimeUnit.MILLISECONDS));
         return nogo.toMultiPolygon();
+
     }
 
     @GetMapping("/info")

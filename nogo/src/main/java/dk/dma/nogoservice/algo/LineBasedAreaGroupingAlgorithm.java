@@ -14,6 +14,7 @@
  */
 package dk.dma.nogoservice.algo;
 
+import com.vividsolutions.jts.geom.Geometry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -23,8 +24,8 @@ import java.util.stream.Collectors;
  * An Algorithm for taking a grid (List of rows) and finds polygons coordinates identifying areas with similar values
  * The are processes the grid one line at a time, and if the current line connects with the previous line it extends the polygon area
  * The algorithm is general, but used to find NoGo areas
- *
- * NOTE: This algorithm is not complete, it has problems with holes
+ * <br>
+ * <b>NOTE:</b> This algorithm is not complete, it has problems with holes
  *
  * @author Klaus Groenbaek
  *         Created 13/03/17.
@@ -61,7 +62,7 @@ public class LineBasedAreaGroupingAlgorithm<Value> implements AreaGroupingAlgori
      * @return a list of figures that identifies the coordinates which matched
      */
     @Override
-    public List<Figure> getFigures() {
+    public List<Geometry> getFigures() {
 
         List<List<LineSegment>> rows = new ArrayList<>();
         for (int y = 0; y < rowsOfColumns.size(); y++) {
@@ -99,7 +100,9 @@ public class LineBasedAreaGroupingAlgorithm<Value> implements AreaGroupingAlgori
             rows.add(linesInRow);
         }
 
-        return joinLines(rows);
+        List<Figure> figures = joinLines(rows);
+
+        return figures.stream().map(f->f.toGeomerty()).collect(Collectors.toList());
     }
 
     /**

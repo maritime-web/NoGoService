@@ -14,6 +14,7 @@
  */
 package dk.dma.nogoservice.service;
 
+import com.google.common.base.Preconditions;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
@@ -41,10 +42,13 @@ import static dk.dma.nogoservice.ApiProfiles.PRODUCTION;
 @Profile(PRODUCTION)
 public class DefaultNoGoService implements NoGoService {
 
-    private final List<QueryArea> queryAreas;
+    private final List<GridDataQueryArea> queryAreas;
+    private final NoGoResponseMerger noGoResponseMerger;
 
     @Autowired
-    public DefaultNoGoService(List<QueryArea> queryAreas) {
+    public DefaultNoGoService(List<GridDataQueryArea> queryAreas, NoGoResponseMerger noGoResponseMerger) {
+        this.noGoResponseMerger = noGoResponseMerger;
+        Preconditions.checkArgument(!queryAreas.isEmpty(), "");
         this.queryAreas = queryAreas;
     }
 
@@ -65,11 +69,25 @@ public class DefaultNoGoService implements NoGoService {
         String wkt = request.toWKT();
         WKTReader reader = new WKTReader();
         Geometry area = reader.read(wkt);
-        for (QueryArea queryArea : queryAreas) {
-            if (queryArea.matches(area)) {
-                return queryArea.getNogoAreas(request);
+        List<CalculatedNoGoArea> areas = new ArrayList<>();
+        for (GridDataQueryArea queryArea : queryAreas) {
+            AreaMatch match = queryArea.matches(area);
+            if (match.matches()) {
+                NoGoRequest sectionRequest = new NoGoRequest().setDraught(request.getDraught()).setTime(request.getTime())
+                        .setNorthWest(match.getNorthWest()).setSouthEast(match.getSouthEast());
+                CalculatedNoGoArea nogoAreas = queryArea.getNogoAreas(sectionRequest);
+                nogoAreas.setArea(match.getIntersection());
+                areas.add( nogoAreas);
             }
         }
+
+        // todo: we should probably add a warning if there is no data for part of the requested area.
+
+        // find a way to join the nogo area polygons
+        if (areas.size() > 0) {
+            return noGoResponseMerger.merge(areas).toResponse();
+        }
+
 
         throw new APIException(ErrorMessage.OUTSIDE_GRID, "Depth service does not support the give area, supported areas are " +
                 queryAreas.stream().map(QueryArea::getName).collect(Collectors.joining(",")));

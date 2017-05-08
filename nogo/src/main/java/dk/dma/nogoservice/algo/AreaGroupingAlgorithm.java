@@ -14,6 +14,8 @@
  */
 package dk.dma.nogoservice.algo;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import java.util.List;
 
 /**
@@ -21,5 +23,5 @@ import java.util.List;
  *         Created 28/03/17.
  */
 public interface AreaGroupingAlgorithm<Value> {
-    List<Figure> getFigures();
+    List<Geometry> getFigures();
 }

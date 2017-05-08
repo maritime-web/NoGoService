@@ -15,6 +15,7 @@
 package dk.dma.nogoservice.algo;
 
 import com.google.common.collect.Lists;
+import com.vividsolutions.jts.geom.*;
 import lombok.EqualsAndHashCode;
 
 import java.util.List;
@@ -39,5 +40,11 @@ public class Line extends Figure {
     @Override
     public String toString() {
         return "Line " + getPoints().stream().map(Object::toString).collect(Collectors.joining(","));
+    }
+
+    @Override
+    public Geometry toGeomerty() {
+        Coordinate[] coords = getPoints().stream().map(p->new Coordinate(p.x, p.y)).toArray(Coordinate[]::new);
+        return new GeometryFactory().createLineString(coords);
     }
 }

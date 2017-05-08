@@ -15,7 +15,8 @@
 package dk.dma.nogoservice.service;
 
 import com.vividsolutions.jts.geom.Geometry;
-import dk.dma.nogoservice.dto.*;
+import dk.dma.nogoservice.dto.AreaInfo;
+import dk.dma.nogoservice.dto.NoGoRequest;
 
 /**
  * @author Klaus Groenbaek
@@ -24,7 +25,7 @@ import dk.dma.nogoservice.dto.*;
 public interface QueryArea {
 
     String getName();
-    boolean matches(Geometry area);
-    NoGoResponse getNogoAreas(NoGoRequest request);
+    AreaMatch matches(Geometry area);
+    CalculatedNoGoArea getNogoAreas(NoGoRequest request);
     AreaInfo getInfo();
 }

@@ -19,6 +19,7 @@ package dk.dma.nogoservice;
  *         Created 12/03/17.
  */
 public class ApiProfiles {
+    public static final String SECURITY = "security";
     public static final String PRODUCTION = "production";
     public static final String TEST = "test";
 }

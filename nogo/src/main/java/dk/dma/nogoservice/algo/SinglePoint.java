@@ -14,6 +14,7 @@
  */
 package dk.dma.nogoservice.algo;
 
+import com.vividsolutions.jts.geom.*;
 import lombok.EqualsAndHashCode;
 
 /**
@@ -30,5 +31,11 @@ public class SinglePoint extends Figure {
     @Override
     public String toString() {
         return "Point " + getPoints().get(0);
+    }
+
+    @Override
+    public Geometry toGeomerty() {
+        Point point = getPoints().get(0);
+        return new GeometryFactory().createPoint(new Coordinate(point.x, point.y));
     }
 }

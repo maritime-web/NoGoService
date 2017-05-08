@@ -30,18 +30,4 @@ public class NoGoRequest {
         return "POLYGON((" + northWest.toWKT() + ", " + southEast.getLon() + " " + northWest.getLat() + ", " +
                 southEast.toWKT() + ", " + northWest.getLon() + " " + southEast.getLat() + ", " + northWest.toWKT() + "))";
     }
-
-
-    /**
-     * Creates a new request with the following padding. The padding is added is added around the rectangle in all 4 directions
-     * @param lonPadding the padding to add north, south
-     * @param latPadding the padding to add west and east
-     * @return a new request with including the padding
-     */
-    public NoGoRequest plusPadding(double lonPadding, double latPadding) {
-        return new NoGoRequest()
-                .setNorthWest(new GeoCoordinate(northWest.getLon() + lonPadding, northWest.getLat() + latPadding))
-                .setSouthEast(new GeoCoordinate(southEast.getLon() + lonPadding, southEast.getLat() + latPadding))
-                .setDraught(draught);
-    }
 }

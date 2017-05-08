@@ -14,16 +14,14 @@
  */
 package dk.dma.nogoservice.service;
 
-import com.google.common.collect.Lists;
-import dk.dma.common.dto.GeoCoordinate;
-import dk.dma.common.util.MathUtil;
-import dk.dma.nogoservice.algo.*;
-import dk.dma.nogoservice.dto.NoGoPolygon;
+import com.vividsolutions.jts.geom.*;
+import dk.dma.nogoservice.dto.GridData;
 import dk.dma.nogoservice.entity.GeoCoordinateProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -35,66 +33,42 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class FigureTransformer {
-    /**
-     * The data is made up by distinct points, with a distance between. We therefore take half the distance between a Go and noGo point and add it as padding
-     * The spacing is 0.00111 between points on both the lon and lat axis, which corresponds to a longitude delta of approximately 70m, and latitude delta of 123m
-     */
-    public static final float halfLatSpacing = 0.00055504f;
-    public static final float halfLongSpacing = 0.00055504f;
 
-    public <Value extends GeoCoordinateProvider> List<NoGoPolygon> convertToGeoLocations(List<List<Value>> grid, List<Figure> figures) {
 
-        ArrayList<NoGoPolygon> noGoPolygons = new ArrayList<>();
+    <Value extends GeoCoordinateProvider> List<Geometry> convertToGeoLocations(List<List<Value>> grid, List<Geometry> figures, GridData gridData) {
 
-        for (Figure figure : figures) {
-            List<GeoCoordinate> points = figure.getPoints().stream()
-                    .map(point -> {
-                        Value element = grid.get(point.y).get(point.x);
-                        return new GeoCoordinate(element.getLon(), element.getLat());
-                    })
-                    .collect(Collectors.toList());
-            if (figure instanceof Polygon) {
-                noGoPolygons.add(new NoGoPolygon().setPoints(points));
-            }
-            if (figure instanceof Line) {
-                if (figure.getPoints().get(0).x == figure.getPoints().get(1).x) {
-                    // use the figures integer indexes to see if the line is vertical (avoid doubleMath)
-                    GeoCoordinate first = points.get(0);
-                    GeoCoordinate second = points.get(1);
-                    if (first.getLat() < second.getLat()) {
-                        GeoCoordinate downLeft = first.adjusted(-halfLongSpacing, -halfLatSpacing);
-                        GeoCoordinate upLeft = second.adjusted(-halfLongSpacing, halfLatSpacing);
-                        GeoCoordinate upRight = second.adjusted(halfLongSpacing, halfLatSpacing);
-                        GeoCoordinate downRight = first.adjusted(halfLongSpacing, -halfLatSpacing);
-                        noGoPolygons.add(new NoGoPolygon().setPoints(Lists.newArrayList(downLeft, upLeft, upRight, downRight, downLeft)));
-                    } else {
-                        GeoCoordinate temp = first;
-                        first = second;
-                        second = temp;
-
-                        GeoCoordinate downLeft = first.adjusted(-halfLongSpacing, -halfLatSpacing);
-                        GeoCoordinate upLeft = second.adjusted(-halfLongSpacing, halfLatSpacing);
-                        GeoCoordinate upRight = second.adjusted(halfLongSpacing, halfLatSpacing);
-                        GeoCoordinate downRight = first.adjusted(halfLongSpacing, -halfLatSpacing);
-                        noGoPolygons.add(new NoGoPolygon().setPoints(Lists.newArrayList(downLeft, upLeft, upRight, downRight, downLeft)));
-                    }
-                }
+        double halfLatSpacing = gridData.getDy() / 2;
+        double halfLongSpacing = gridData.getDx() / 2;
+        double buffer = (halfLatSpacing + halfLongSpacing) / 2;
+        GeometryFactory factory = new GeometryFactory();
+        // convert from x,y grid to long/lat, and add buffering
+        List<Geometry> collect = figures.stream().map(geometry -> {
+            // Although coordinate is not immutable, modifying it directly give strangeResults
+            Geometry result;
+            if (geometry instanceof Polygon) {
+                Polygon polygon = (Polygon) geometry;
+                // since this is used with nogo areas we know there are no holes
+                Coordinate[] exteriorRing = convertCoordinates(grid, polygon.getExteriorRing().getCoordinates());
+                result = factory.createPolygon(exteriorRing);
+            } else if (geometry instanceof LineString) {
+                LineString lineString = (LineString) geometry;
+                result = factory.createLineString(convertCoordinates(grid, lineString.getCoordinates()));
+            } else if (geometry instanceof Point) {
+                Point point = (Point) geometry;
+                result = factory.createLineString(convertCoordinates(grid, point.getCoordinates()));
+            } else {
+                throw new IllegalArgumentException("Unsupported Geometry " + geometry.getClass());
             }
 
-            if (figure instanceof SinglePoint) {
-                GeoCoordinate center = points.get(0);
-                GeoCoordinate downLeft = center.adjusted(-halfLongSpacing, -halfLatSpacing);
-                GeoCoordinate upLeft = center.adjusted(-halfLongSpacing, halfLatSpacing);
-                GeoCoordinate upRight = center.adjusted(halfLongSpacing, halfLatSpacing);
-                GeoCoordinate downRight = center.adjusted(halfLongSpacing, -halfLatSpacing);
-                noGoPolygons.add(new NoGoPolygon().setPoints(Lists.newArrayList(downLeft, upLeft, upRight, downRight, downLeft)));
-            }
-        }
-
-        noGoPolygons.stream().map(NoGoPolygon::getPoints).flatMap(Collection::stream).forEach(coordinate -> {
-            coordinate.setLon(MathUtil.round(coordinate.getLon(), 6));
-            coordinate.setLat(MathUtil.round(coordinate.getLat(), 6));
-        });
-        return noGoPolygons;
+            return result.buffer(buffer, 2);
+        }).collect(Collectors.toList());
+        return collect;
     }
+
+    private <Value extends GeoCoordinateProvider> Coordinate[] convertCoordinates(List<List<Value>> grid, Coordinate[] coordinates) {
+        return Arrays.stream(coordinates)
+                            .map(coordinate -> grid.get((int) coordinate.y).get((int) coordinate.x))
+                            .map(v->new Coordinate(v.getLon(), v.getLat())).toArray(Coordinate[]::new);
+    }
+
 }

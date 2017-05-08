@@ -55,7 +55,7 @@ public class GeoCoordinate {
         return lon + " " + lat;
     }
 
-    public GeoCoordinate adjusted(float deltaLon, float deltaLat) {
+    public GeoCoordinate adjusted(double deltaLon, double deltaLat) {
         return new GeoCoordinate(lon+deltaLon, lat+deltaLat);
     }
 

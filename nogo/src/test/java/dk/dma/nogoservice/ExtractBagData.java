@@ -55,7 +55,7 @@ public class ExtractBagData {
     public static void main(String[] args) throws Exception {
 
         try {
-            String bagFile = "/Users/kg/work/NoGoService/EfficienSea2/10m_min_GRON.bag";
+            String bagFile = "/Users/kg/work/NoGoService/EfficienSea2/50m_min_GRON.bag";
             String dataSet = "BAG_root/elevation";
             String uncertaintyDataSet = "BAG_root/uncertainty";
             String hdf5Dump = "/Users/kg/work/NoGoService/hdf5-1.8.7-mac-intel-x86_64-static/bin/h5dump";
@@ -64,7 +64,7 @@ public class ExtractBagData {
             GridData gridData = new ExtractBagData(hdf5Dump).createGridData(bagFile, dataSet, uncertaintyDataSet);
             gridData.setDescription("Bathymetric data for Flintrannan Sweden, -9999.0 means no value (land), and depth is given as negative altitude.");
             gridData.setName("Flintrannan");
-            File outFile = new File("/Users/kg/work/NoGoService/Flintrannan_depth.json");
+            File outFile = new File("/Users/kg/work/NoGoService/Flintrannan_50_depth.json");
 
             new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(outFile, gridData);
 
@@ -109,10 +109,86 @@ public class ExtractBagData {
                     array[i] = value + uncertainty;
                 }
             }
-            data.setData(array);
+
+
+            setData(data, array);
+            int count = 0;
+            for (float v : array) {
+                if (v != GridData.NO_DATA && v < -6) {
+                    count++;
+                }
+            }
+            System.out.println(String.format("Point with more than 6 meters %s of %s, %.2f percent", count, array.length, (100.0 * count)/array.length));
         }
 
         return data;
+    }
+
+    /**
+     *
+     * the sample data we got from sweden has no depth data in the outer most ring, we have to remove that otherwise we can't sail into the
+     * deeper areas. We therefore remove any rows and columns that contains no data points
+     * @param data the GridData
+     * @param array the data aray before cleaning is performed
+     */
+    private void setData(GridData data, float[] array) {
+
+        // Find the first row from the top which has data
+        int topRow = 0;
+        int bottomRow = data.getNy()-1;
+        int leftColumn = 0;
+        int rightColumn = data.getNx()-1;
+        top: for (; topRow < data.getNy(); topRow++) {
+            for (int col = 0; col < data.getNx(); col++) {
+                if (array[topRow*data.getNx() + col] != GridData.NO_DATA) {
+                    break top;
+                }
+            }
+        }
+
+        bottom: for (; bottomRow > 0; bottomRow--) {
+            for (int col = 0; col < data.getNx(); col++) {
+                if (array[bottomRow*data.getNx() + col] != GridData.NO_DATA) {
+                    break bottom;
+                }
+            }
+        }
+
+        left: for (;leftColumn < data.getNx(); leftColumn++) {
+            for (int row=0; row < data.getNy(); row++) {
+                if (array[row*data.getNx() + leftColumn] != GridData.NO_DATA) {
+                    break left;
+                }
+            }
+        }
+        right: for (;rightColumn > 0; rightColumn--) {
+            for (int row=0; row < data.getNy(); row++) {
+                if (array[row*data.getNx() + rightColumn] != GridData.NO_DATA) {
+                    break right;
+                }
+            }
+        }
+
+
+        int newNy = bottomRow - topRow;
+        int newNx = rightColumn - leftColumn;
+        float[] cleaned = new float[ newNy * newNx];
+        for (int row = topRow; row < bottomRow; row++) {
+            System.arraycopy(array, row*data.getNx() + leftColumn, cleaned, (row-topRow) * newNx, newNx);
+        }
+
+        data.setLa1(data.getLa1() + topRow*data.getDy());
+        data.setLa2(data.getLa2() - (data.getNy()-bottomRow) * data.getDy());
+
+        data.setLo1(data.getLo1() + leftColumn*data.getDx());
+        data.setLo2(data.getLo2() - (data.getNx()-rightColumn) * data.getDx());
+        // there should be set last, as they are used
+        data.setNy(newNy);
+        data.setNx(newNx);
+
+
+
+        data.setData(cleaned);
     }
 
     @SneakyThrows(DocumentException.class)

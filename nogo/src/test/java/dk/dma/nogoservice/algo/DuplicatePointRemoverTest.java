@@ -14,35 +14,26 @@
  */
 package dk.dma.nogoservice.algo;
 
-import com.google.common.collect.Lists;
-import com.vividsolutions.jts.geom.Geometry;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
+import org.assertj.core.util.Lists;
+import org.junit.Test;
 
-import java.util.List;
+import java.util.ArrayList;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * A figure is a list of points.
  * @author Klaus Groenbaek
- *         Created 15/03/17.
+ *         Created 05/05/17.
  */
-@AllArgsConstructor
-@EqualsAndHashCode
-public abstract class Figure {
-    private final List<Point> points;
+public class DuplicatePointRemoverTest {
 
-    Figure(Point... points) {
-        this(Lists.newArrayList(points));
+    @Test
+    public void test() {
+        ArrayList<Point> points = Lists.newArrayList(new Point(1, 1), new Point(1,1 ), new Point(2,2));
+        DuplicatePointRemover.removeSequentialDuplicates(points);
+        assertEquals(2, points.size());
+        assertEquals(new Point(1,1), points.get(0));
+        assertEquals(new Point(2,2), points.get(1));
     }
 
-    @Override
-    public String toString() {
-        throw new IllegalStateException("Sub classes must override to string, for debugging purposes.");
-    }
-
-    public List<Point> getPoints() {
-        return points;
-    }
-
-    public abstract Geometry toGeomerty();
 }
