@@ -15,8 +15,8 @@
 package dk.dma.dmiweather.grib;
 
 import dk.dma.dmiweather.dto.GridParameterType;
-import ucar.grib.grib1.Grib1Data;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +29,7 @@ import java.util.Map;
 public class MeridionalZonalFactory implements DataProviderFactory {
 
 
-    private final Grib1Data data;
+    private final File file;
     private final ParameterAndRecord meridional;
     private final ParameterAndRecord zonal;
     private final GridParameterType directionType;
@@ -38,15 +38,15 @@ public class MeridionalZonalFactory implements DataProviderFactory {
 
     /**
      * constructs the factory
-     * @param data the data
+     * @param file the data
      * @param meridional the meridional parameter
      * @param zonal the zonal parameter
      * @param directionType the parameter type for the direction data
      * @param speedType the parameter type for the speed data
      * @param dataRounding number of decimals to round data to
      */
-    public MeridionalZonalFactory(Grib1Data data, ParameterAndRecord meridional, ParameterAndRecord zonal, GridParameterType directionType, GridParameterType speedType, int dataRounding) {
-        this.data = data;
+    public MeridionalZonalFactory(File file, ParameterAndRecord meridional, ParameterAndRecord zonal, GridParameterType directionType, GridParameterType speedType, int dataRounding) {
+        this.file = file;
         this.meridional = meridional;
         this.zonal = zonal;
         this.directionType = directionType;
@@ -58,8 +58,8 @@ public class MeridionalZonalFactory implements DataProviderFactory {
     public Map<GridParameterType, AbstractDataProvider> create()  {
 
         HashMap<GridParameterType, AbstractDataProvider> map = new HashMap<>();
-        map.put(directionType, new DirectionDataProvider(this.meridional, zonal, data, dataRounding));
-        map.put(speedType, new SpeedDataProvider(this.meridional, zonal, data, dataRounding));
+        map.put(directionType, new DirectionDataProvider(this.meridional, zonal, file, dataRounding));
+        map.put(speedType, new SpeedDataProvider(this.meridional, zonal, file, dataRounding));
         return map;
 
     }

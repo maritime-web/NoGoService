@@ -23,8 +23,9 @@ import dk.dma.common.util.MathUtil;
 import lombok.Getter;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import ucar.grib.grib1.Grib1GDSVariables;
+import ucar.grib.grib1.*;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 
 import static dk.dma.dmiweather.service.GribFileWrapper.GRIB_NOT_DEFINED;
@@ -232,5 +233,9 @@ public abstract class AbstractDataProvider implements DataProvider {
         if (northWest.getLat() < southEast.getLat()) {
             throw new APIException(ErrorMessage.INVALID_GRID_LAT);
         }
+    }
+
+    protected float[] getData(Grib1ProductDefinitionSection pds, Grib1Data gd, ParameterAndRecord parameterAndRecord) throws IOException {
+        return gd.getData(parameterAndRecord.record.getDataOffset(), pds.getDecimalScale(), pds.bmsExists());
     }
 }

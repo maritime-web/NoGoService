@@ -55,6 +55,7 @@ public class FTPLoader {
     private final List<ForecastConfiguration> configurations;
     private File lastTempDir;
     private String hostname = "ftp.dmi.dk";
+    private Map<ForecastConfiguration, String> newestDirectories = new HashMap<>();
 
     @Autowired
     public FTPLoader(WeatherService gridWeatherService, @Value("${ftploader.tempdir:#{null}}") String tempDirLocation, List<ForecastConfiguration> configurations) {
@@ -72,7 +73,7 @@ public class FTPLoader {
         FTPClient client = new FTPClient();
         try {
             client.setDataTimeout(20 * 1000);
-            client.setBufferSize(1024*1024);
+            client.setBufferSize(1024 * 1024);
             client.connect(hostname);
             if (client.login("anonymous", "")) {
                 try {
@@ -85,20 +86,26 @@ public class FTPLoader {
                                 log.error("Did not get reply 250 as expected, got {} ", client.getReplyCode());
                             }
                             String workingDirectory = new File(client.printWorkingDirectory()).getName();
+                            String newest = newestDirectories.get(configuration);
+                            if (!workingDirectory.equals(newest)) {
+                                // a new directory for this configuration is available on the server
+                                FTPFile[] listFiles = client.listFiles();
+                                List<FTPFile> files = Arrays.stream(listFiles).filter(f -> configuration.getFilePattern().matcher(f.getName()).matches()).collect(Collectors.toList());
 
-                            FTPFile[] listFiles = client.listFiles();
-                            List<FTPFile> files = Arrays.stream(listFiles).filter(f -> configuration.getFilePattern().matcher(f.getName()).matches()).collect(Collectors.toList());
+                                try {
+                                    Map<File, Instant> localFiles = transferFilesIfNeeded(client, workingDirectory, files);
 
-                            try {
-                                Map<File, Instant> localFiles = transferFilesIfNeeded(client, workingDirectory, files);
-                                gridWeatherService.newFiles(localFiles, configuration);
-                                File newTempDir = localFiles.keySet().iterator().next().getParentFile();
-                                if (lastTempDir != null && newTempDir.equals(lastTempDir)) {
-                                    deleteRecursively(lastTempDir);
-                                    lastTempDir = newTempDir;
+
+                                    gridWeatherService.newFiles(localFiles, configuration);
+                                    File newTempDir = localFiles.keySet().iterator().next().getParentFile();
+                                    if (lastTempDir != null && newTempDir.equals(lastTempDir)) {
+                                        deleteRecursively(lastTempDir);
+                                        lastTempDir = newTempDir;
+                                    }
+                                } catch (IOException e) {
+                                    log.warn("Unable to get new weather files from DMI", e);
                                 }
-                            } catch (IOException e) {
-                                log.warn("Unable to get new weather files from DMI", e);
+                                newestDirectories.put(configuration, workingDirectory);
                             }
 
                         } else {
@@ -181,18 +188,17 @@ public class FTPLoader {
             if (tmp.createNewFile()) {
                 log.info("downloading {}", tmp.getName());
 
-                try (FileOutputStream fout = new FileOutputStream(tmp)) {
-                    // this often fails with java.net.ConnectException: Operation timed out
-                    int count = 0;
-                    while (count++ < MAX_TRIES) {
-                        try {
-                            client.retrieveFile(file.getName(), fout);
-                            break;
-                        } catch (IOException e) {
-                            log.warn(String.format("Failed to transfer file %s, try number %s", file.getName(), count), e);
-                        }
+
+                // this often fails with java.net.ConnectException: Operation timed out
+                int count = 0;
+                while (count++ < MAX_TRIES) {
+                    try (FileOutputStream fout = new FileOutputStream(tmp)) {
+                        client.retrieveFile(file.getName(), fout);
+                        fout.flush();
+                        break;
+                    } catch (IOException e) {
+                        log.warn(String.format("Failed to transfer file %s, try number %s", file.getName(), count), e);
                     }
-                    fout.flush();
                 }
             } else {
                 throw new IOException("Unable to create temp file on disk.");

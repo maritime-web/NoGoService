@@ -19,6 +19,7 @@ import com.vividsolutions.jts.geom.*;
 import dk.dma.dmiweather.dto.GridParameterType;
 import dk.dma.dmiweather.grib.*;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import ucar.grib.NoValidGribException;
 import ucar.grib.grib1.*;
 import ucar.grid.GridParameter;
@@ -33,6 +34,7 @@ import java.util.*;
  * @author Klaus Groenbaek
  *         Created 29/03/17.
  */
+@Slf4j
 @Getter
 public class GribFileWrapper {
 
@@ -77,7 +79,7 @@ public class GribFileWrapper {
         double smallestDx = Float.MAX_VALUE;
         AbstractDataProvider found = null;
         for (AbstractDataProvider dataProvider : dataProviders.values()) {
-            if (dataProvider.getDx()  < smallestDx ) {
+            if (dataProvider.getDx() < smallestDx) {
                 smallestDx = dataProvider.getDx();
                 found = dataProvider;
             }
@@ -105,90 +107,96 @@ public class GribFileWrapper {
 
     /**
      * creates a dataProvider for each parameter type from the information in the GRIB file
-     * @return an Immutable map of providers
+     *
      * @param file the GRIB file
+     * @return an Immutable map of providers
      */
     private Map<GridParameterType, AbstractDataProvider> initProviders(File file) {
         HashMap<GridParameterType, AbstractDataProvider> map = new HashMap<>();
 
         try {
             RandomAccessFile raf = new RandomAccessFile(file.getAbsolutePath(), "r");
-            raf.order(RandomAccessFile.BIG_ENDIAN);
+            try {
+                raf.order(RandomAccessFile.BIG_ENDIAN);
 
-            Grib1Input input = new Grib1Input(raf);
-            input.scan(false, false);
-            ArrayList<Grib1Record> records = input.getRecords();
+                Grib1Input input = new Grib1Input(raf);
+                input.scan(false, false);
+                ArrayList<Grib1Record> records = input.getRecords();
 
-            Grib1Data gd = new Grib1Data(raf);
+                // loop through the records and create a map from parameter number to ParameterAndRecord, since some data series is build from two parameters
+                HashMap<Integer, ParameterAndRecord> lookup = new HashMap<>();
+                for (int i = 0; i < input.getRecords().size(); i++) {
+                    Grib1Record record = records.get(i);
+                    Grib1ProductDefinitionSection pds = record.getPDS();
+                    Grib1Pds pdsv = pds.getPdsVars();
+                    int center = pdsv.getCenter();
+                    int subCenter = pdsv.getSubCenter();
+                    int pn = pdsv.getParameterNumber();
+                    GribPDSParamTable parameter_table = GribPDSParamTable.getParameterTable(
+                            center, subCenter, pdsv.getParameterTableVersion());
+                    GridParameter parameter = parameter_table.getParameter(pn);
 
-            // loop through the records and create a map from parameter number to ParameterAndRecord, since some data series is build from two parameters
-            HashMap<Integer, ParameterAndRecord> lookup = new HashMap<>();
-            for (int i = 0; i < input.getRecords().size(); i++) {
-                Grib1Record record = records.get(i);
-                Grib1ProductDefinitionSection pds = record.getPDS();
-                Grib1Pds pdsv = pds.getPdsVars();
-                int center = pdsv.getCenter();
-                int subCenter = pdsv.getSubCenter();
-                int pn = pdsv.getParameterNumber();
-                GribPDSParamTable parameter_table = GribPDSParamTable.getParameterTable(
-                        center, subCenter, pdsv.getParameterTableVersion());
-                GridParameter parameter = parameter_table.getParameter(pn);
-
-                lookup.put(parameter.getNumber(), new ParameterAndRecord(parameter, record));
+                    lookup.put(parameter.getNumber(), new ParameterAndRecord(parameter, record));
+                }
+                // configure the factories which will create data providers
+                List<DataProviderFactory> factories = configureFactories(file, lookup);
+                for (DataProviderFactory factory : factories) {
+                    map.putAll(factory.create());
+                }
+            } finally {
+                try {
+                    raf.close();
+                } catch (IOException e) {
+                    log.info("Unable to close GRIB file", e);
+                }
             }
-            // configure the factories which will create data providers
-            List<DataProviderFactory> factories = configureFactories(gd, lookup);
-            for (DataProviderFactory factory : factories) {
-                map.putAll(factory.create());
-            }
-
         } catch (IOException | NoValidGribException e) {
             throw new RuntimeException("Unable to load GRIB file", e);
         }
         return map;
     }
 
-    private List<DataProviderFactory> configureFactories(Grib1Data gribData, HashMap<Integer, ParameterAndRecord> lookup) {
+    private List<DataProviderFactory> configureFactories(File file, HashMap<Integer, ParameterAndRecord> lookup) {
 
         List<DataProviderFactory> factories = new ArrayList<>();
 
         ParameterAndRecord meridionalWind = lookup.get(MERIDIONAL_WIND);
         ParameterAndRecord zonalWind = lookup.get(ZONAL_WIND);
         if (meridionalWind != null && zonalWind != null) {
-            factories.add(new MeridionalZonalFactory(gribData, meridionalWind, zonalWind,
+            factories.add(new MeridionalZonalFactory(file, meridionalWind, zonalWind,
                     GridParameterType.WindDirection, GridParameterType.WindSpeed, dataRounding));
         }
 
         ParameterAndRecord meridionalCurrent = lookup.get(MERIDIONAL_CURRENT);
         ParameterAndRecord zonalCurrent = lookup.get(ZONAL_CURRENT);
         if (meridionalCurrent != null && zonalCurrent != null) {
-            factories.add(new MeridionalZonalFactory(gribData, meridionalCurrent, zonalCurrent,
+            factories.add(new MeridionalZonalFactory(file, meridionalCurrent, zonalCurrent,
                     GridParameterType.CurrentDirection, GridParameterType.CurrentSpeed, dataRounding));
         }
 
         ParameterAndRecord sealevel = lookup.get(SEA_LEVEL);
         if (sealevel != null) {
-            factories.add(new SimpleDataProviderFactory(gribData, sealevel, GridParameterType.SeaLevel, dataRounding));
+            factories.add(new SimpleDataProviderFactory(file, sealevel, GridParameterType.SeaLevel, dataRounding));
         }
         ParameterAndRecord densityParam = lookup.get(DENSITY);
         if (densityParam != null) {
             // old test files need to be updated since they don't have density
-            factories.add(new SimpleDataProviderFactory(gribData, densityParam, GridParameterType.Density, dataRounding));
+            factories.add(new SimpleDataProviderFactory(file, densityParam, GridParameterType.Density, dataRounding));
         }
 
         ParameterAndRecord waveHeight = lookup.get(WAVE_HEIGHT);
         if (waveHeight != null) {
-            factories.add(new SimpleDataProviderFactory(gribData, waveHeight, GridParameterType.WaveHeight, dataRounding));
+            factories.add(new SimpleDataProviderFactory(file, waveHeight, GridParameterType.WaveHeight, dataRounding));
         }
 
         ParameterAndRecord waveDirection = lookup.get(WAVE_DIRECTION);
         if (waveDirection != null) {
-            factories.add(new SimpleDataProviderFactory(gribData, waveDirection, GridParameterType.WaveDirection, dataRounding));
+            factories.add(new SimpleDataProviderFactory(file, waveDirection, GridParameterType.WaveDirection, dataRounding));
         }
 
         ParameterAndRecord wavePeriod = lookup.get(WAVE_PERIOD);
         if (wavePeriod != null) {
-            factories.add(new SimpleDataProviderFactory(gribData, wavePeriod, GridParameterType.WavePeriod, dataRounding));
+            factories.add(new SimpleDataProviderFactory(file, wavePeriod, GridParameterType.WavePeriod, dataRounding));
         }
 
 

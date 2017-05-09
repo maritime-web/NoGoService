@@ -47,7 +47,11 @@ public class Application extends WebMvcConfigurerAdapter {
         return new Docket(DocumentationType.SWAGGER_2)
                 .select()
                 .apis(RequestHandlerSelectors.any())
-                .paths(Predicates.not(PathSelectors.regex("/error")))
+                .paths(Predicates.not(
+                        Predicates.or(PathSelectors.regex("/error"),
+                                PathSelectors.regex("/ping"),
+                                PathSelectors.regex("/debughealth"))
+                ))
                 .build();
     }
 

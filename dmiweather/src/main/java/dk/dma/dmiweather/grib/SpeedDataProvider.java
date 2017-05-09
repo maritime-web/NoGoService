@@ -14,7 +14,7 @@
  */
 package dk.dma.dmiweather.grib;
 
-import ucar.grib.grib1.Grib1Data;
+import java.io.File;
 
 /**
  * Provides a data series of speed (like wind speed) data based on a zonal and meridional data series
@@ -23,8 +23,8 @@ import ucar.grib.grib1.Grib1Data;
  */
 public class SpeedDataProvider extends MeridionalZonalDataProvider {
 
-    SpeedDataProvider(ParameterAndRecord meridional, ParameterAndRecord zonal, Grib1Data data, int dataRounding) {
-        super(meridional, zonal, data, dataRounding);
+    SpeedDataProvider(ParameterAndRecord meridional, ParameterAndRecord zonal, File file, int dataRounding) {
+        super(meridional, zonal, file, dataRounding);
     }
 
     @Override

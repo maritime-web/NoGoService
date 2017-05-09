@@ -16,8 +16,11 @@ package dk.dma.dmiweather.grib;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import ucar.grib.grib1.*;
+import ucar.unidata.io.RandomAccessFile;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -25,16 +28,17 @@ import java.io.IOException;
  * @author Klaus Groenbaek
  *         Created 30/03/17.
  */
+@Slf4j
 @SuppressFBWarnings("EI_EXPOSE_REP2")
 public class SimpleDataProvider extends AbstractDataProvider {
 
     private final ParameterAndRecord parameterAndRecord;
-    private final Grib1Data grib1Data;
+    private final File file;
 
-    SimpleDataProvider(ParameterAndRecord parameterAndRecord, Grib1Data grib1Data, int dataRounding) {
+    SimpleDataProvider(ParameterAndRecord parameterAndRecord, File file, int dataRounding) {
         super(parameterAndRecord, dataRounding);
         this.parameterAndRecord = parameterAndRecord;
-        this.grib1Data = grib1Data;
+        this.file = file;
     }
 
 
@@ -44,7 +48,19 @@ public class SimpleDataProvider extends AbstractDataProvider {
         Grib1Record record = parameterAndRecord.record;
         Grib1ProductDefinitionSection pds = record.getPDS();
         //noinspection deprecation
-        return grib1Data.getData(record.getDataOffset(), pds.getDecimalScale(), pds.bmsExists());
+
+        RandomAccessFile raf = new RandomAccessFile(file.getAbsolutePath(), "r");
+        try {
+            raf.order(RandomAccessFile.BIG_ENDIAN);
+            Grib1Data gd = new Grib1Data(raf);
+            return getData(pds, gd, parameterAndRecord);
+        } finally {
+            try {
+                raf.close();
+            } catch (IOException e) {
+                log.info("Unable to close GRIB file", e);
+            }
+        }
     }
 
 }

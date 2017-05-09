@@ -16,8 +16,11 @@ package dk.dma.dmiweather.grib;
 
 import dk.dma.dmiweather.service.GribFileWrapper;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import ucar.grib.grib1.*;
+import ucar.unidata.io.RandomAccessFile;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -26,17 +29,18 @@ import java.io.IOException;
  * @author Klaus Groenbaek
  *         Created 04/04/17.
  */
+@Slf4j
 public abstract class MeridionalZonalDataProvider extends AbstractDataProvider {
 
     private final ParameterAndRecord meridional;
     private final ParameterAndRecord zonal;
-    private final Grib1Data data;
+    private final File file;
 
-    MeridionalZonalDataProvider(ParameterAndRecord meridional, ParameterAndRecord zonal, Grib1Data data, int dataRounding) {
+    MeridionalZonalDataProvider(ParameterAndRecord meridional, ParameterAndRecord zonal, File file, int dataRounding) {
         super(meridional, dataRounding);
         this.meridional = meridional;
         this.zonal = zonal;
-        this.data = data;
+        this.file = file;
     }
 
     @Override
@@ -45,28 +49,39 @@ public abstract class MeridionalZonalDataProvider extends AbstractDataProvider {
         Grib1Record record = meridional.record;
         Grib1ProductDefinitionSection pds = record.getPDS();
 
-        //noinspection deprecation
-        float[] meridional = data.getData(this.meridional.record.getDataOffset(), pds.getDecimalScale(), pds.bmsExists());
-        //noinspection deprecation
-        float[] zonal = data.getData(this.zonal.record.getDataOffset(), pds.getDecimalScale(), pds.bmsExists());
+        RandomAccessFile raf = new RandomAccessFile(file.getAbsolutePath(), "r");
+        try {
+            raf.order(RandomAccessFile.BIG_ENDIAN);
+            Grib1Data gd = new Grib1Data(raf);
 
-        float[] array = new float[zonal.length];
+            //noinspection deprecation
+            float[] meridional = getData(pds, gd, this.meridional);
+            //noinspection deprecation
+            float[] zonal = getData(pds, gd, this.zonal);
 
-        for (int i = 0; i < zonal.length; i++) {
-            float u = zonal[i];
-            float v = meridional[i];
+            float[] array = new float[zonal.length];
 
-            if (u == GribFileWrapper.GRIB_NOT_DEFINED  || v == GribFileWrapper.GRIB_NOT_DEFINED) {
-                array[i] = GribFileWrapper.GRIB_NOT_DEFINED;
-            }else {
-                // direction is different than a normal coordinate system, the rotation is clockwise starting due south
-                // direction is calculated using a formula found here http://www.ncl.ucar.edu/Document/Functions/Built-in/atan2.shtml
-                float value = calculate(u, v);
-                array[i]= value;
+            for (int i = 0; i < zonal.length; i++) {
+                float u = zonal[i];
+                float v = meridional[i];
+
+                if (u == GribFileWrapper.GRIB_NOT_DEFINED  || v == GribFileWrapper.GRIB_NOT_DEFINED) {
+                    array[i] = GribFileWrapper.GRIB_NOT_DEFINED;
+                }else {
+                    // direction is different than a normal coordinate system, the rotation is clockwise starting due south
+                    // direction is calculated using a formula found here http://www.ncl.ucar.edu/Document/Functions/Built-in/atan2.shtml
+                    float value = calculate(u, v);
+                    array[i]= value;
+                }
+            }
+            return array;
+        } finally {
+            try {
+                raf.close();
+            } catch (IOException e) {
+                log.info("Unable to close GRIB file", e);
             }
         }
-
-        return array;
     }
 
     protected abstract float calculate(float u, float v);

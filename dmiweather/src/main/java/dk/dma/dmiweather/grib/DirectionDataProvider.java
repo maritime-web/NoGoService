@@ -14,7 +14,7 @@
  */
 package dk.dma.dmiweather.grib;
 
-import ucar.grib.grib1.Grib1Data;
+import java.io.File;
 
 /**
  * Data provider that calculates the speed based on Zonal and Meridional data series
@@ -24,7 +24,7 @@ import ucar.grib.grib1.Grib1Data;
 public class DirectionDataProvider extends MeridionalZonalDataProvider {
     private static final double R2D = 45.0 / Math.atan(1.0);
 
-    DirectionDataProvider(ParameterAndRecord meridional, ParameterAndRecord zonal, Grib1Data data, int dataRounding) {
+    DirectionDataProvider(ParameterAndRecord meridional, ParameterAndRecord zonal, File data, int dataRounding) {
         super(meridional, zonal, data, dataRounding);
     }
 

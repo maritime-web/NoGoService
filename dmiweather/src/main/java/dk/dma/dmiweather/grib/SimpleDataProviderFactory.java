@@ -15,8 +15,8 @@
 package dk.dma.dmiweather.grib;
 
 import dk.dma.dmiweather.dto.GridParameterType;
-import ucar.grib.grib1.Grib1Data;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,7 +28,7 @@ import java.util.Map;
 public class SimpleDataProviderFactory implements DataProviderFactory {
 
 
-    private final Grib1Data grib1Data;
+    private final File file;
     private final ParameterAndRecord parameterAndRecord;
     private GridParameterType parameterType;
     private final int dataRounding;
@@ -40,8 +40,8 @@ public class SimpleDataProviderFactory implements DataProviderFactory {
      * @param parameterType the type of GridRequest parameter
      * @param dataRounding number of decimals used for data rounding, -1 for no rounding
      */
-    public SimpleDataProviderFactory(Grib1Data grib1Data, ParameterAndRecord parameterAndRecord, GridParameterType parameterType, int dataRounding) {
-        this.grib1Data = grib1Data;
+    public SimpleDataProviderFactory(File grib1Data, ParameterAndRecord parameterAndRecord, GridParameterType parameterType, int dataRounding) {
+        this.file = grib1Data;
         this.parameterAndRecord = parameterAndRecord;
         this.parameterType = parameterType;
         this.dataRounding = dataRounding;
@@ -50,7 +50,7 @@ public class SimpleDataProviderFactory implements DataProviderFactory {
     @Override
     public Map<GridParameterType, AbstractDataProvider> create() {
         HashMap<GridParameterType, AbstractDataProvider> map = new HashMap<>();
-        map.put(parameterType, new SimpleDataProvider(parameterAndRecord, grib1Data, dataRounding));
+        map.put(parameterType, new SimpleDataProvider(parameterAndRecord, file, dataRounding));
         return map;
     }
 }

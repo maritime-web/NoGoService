@@ -65,6 +65,12 @@ public class WeatherController {
         return service.info();
     }
 
+
+    @GetMapping(value = "/ping")
+    public String ping() {
+        return "{}";
+    }
+
     @GetMapping(value = "/debughealth")
     public Map debug() {
         return indicator.health().getDetails();
