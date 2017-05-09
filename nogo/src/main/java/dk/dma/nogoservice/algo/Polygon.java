@@ -14,6 +14,7 @@
  */
 package dk.dma.nogoservice.algo;
 
+import com.vividsolutions.jts.geom.*;
 import lombok.EqualsAndHashCode;
 
 import java.util.List;
@@ -37,4 +38,26 @@ public class Polygon extends Figure {
         return "Polygon " + getPoints().stream().map(Object::toString).collect(Collectors.joining(","));
     }
 
+    @Override
+    public Geometry toGeomerty() {
+        List<Point> points = getPoints();
+        boolean connected = points.get(0).equals(points.get(points.size() - 1));
+        Coordinate[] array;
+
+        if (connected) {
+            array = new Coordinate[points.size()];
+        } else {
+            array = new Coordinate[points.size()+1];
+        }
+
+        for (int i = 0; i < points.size(); i++) {
+            Point point = points.get(i);
+            array[i] = new Coordinate(point.x, point.y);
+        }
+        if (!connected) {
+            array[points.size()] = array[0];
+        }
+        com.vividsolutions.jts.geom.Polygon polygon = new GeometryFactory().createPolygon(array);
+        return polygon;
+    }
 }

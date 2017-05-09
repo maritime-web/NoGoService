@@ -14,10 +14,12 @@
  */
 package dk.dma.nogoservice.algo;
 
+import com.vividsolutions.jts.geom.Geometry;
 import jankovicsandras.imagetracer.ImageTracer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * An area grouping algorithm based on the translation of a bitmap to SVG images. It uses the internal algorithms from an open source library
@@ -39,7 +41,7 @@ public class VectorGraphicAreaGroupingAlgorithm<Value> implements AreaGroupingAl
     }
 
     @Override
-    public List<Figure> getFigures() {
+    public List<Geometry> getFigures() {
 
         int width = grid.get(0).size();
         int height = grid.size();
@@ -90,21 +92,31 @@ public class VectorGraphicAreaGroupingAlgorithm<Value> implements AreaGroupingAl
             log.debug("svg image " + ImageTracer.getsvgstring(myimage, options));
         }
 
-        ArrayList<ArrayList<Double[]>> redLayer = myimage.layers.get(0);
+        // HACK: The sample data from Flintrannen has the GO area fully enclosed in the NoGo area, as a result the algorithm produces a NoGo area which
+        // covers the entire grid, and then a single Go area which is (drawn) on top of this. The algorithm is technically correct, because it ends up with
+        // a single NoGo ar, technically there is a go area inside, but there is no way to go there.
+        ArrayList<ArrayList<Double[]>> nogoLayer = myimage.layers.get(0);
 
         // coordinates are doubles because of interpolation, here we need to convert them back to a grid
-        // this process may cause a small inaccuracy since we round all numbers down
+        // this process may cause a small inaccuracy since we will round to a specific coordinate
+        // TODO: Instead of rounding we should look at the cells around the point, and pick the most conservative
         List<Figure> list = new ArrayList<>();
-        for (ArrayList<Double[]> figure : redLayer) {
+        for (ArrayList<Double[]> figure : nogoLayer) {
             List<Point> points = new ArrayList<>();
             for (Double[] doubles : figure) {
                 int x =  Math.min(doubles[1].intValue(), width -1);
                 int y = Math.min(doubles[2].intValue(), height -1);
                 points.add(new Point(x, y));
             }
-            list.add(new Polygon(points));
+            DuplicatePointRemover.removeSequentialDuplicates(points);
+            if (points.size() == 2) {
+                list.add(new Line(points));
+            }else {
+                list.add(new Polygon(points));
+            }
         }
-        return list;
+        return list.stream().map(f->f.toGeomerty()).collect(Collectors.toList());
+
     }
 
     private HashMap<String, Float> getOptions() {

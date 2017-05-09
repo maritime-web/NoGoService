@@ -15,6 +15,7 @@
 package dk.dma.nogoservice.algo;
 
 import com.google.common.collect.Lists;
+import com.vividsolutions.jts.geom.Geometry;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -37,8 +38,8 @@ public class NoGoFinderTest {
         String [][] twoDArray = {
                 {"1"},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
-        assertEquals("1", "Point (0,0)", collect.get(0).toString());
+        List<Geometry> collect = getConnectedAreas(twoDArray);
+        assertEquals("1", "POINT (0 0)", collect.get(0).toString());
     }
 
     @Test
@@ -48,8 +49,8 @@ public class NoGoFinderTest {
                 {"1", " "},
                 {"1", " "},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
-        assertEquals("1", "Polygon (0,0),(0,2),(1,2),(0,0)", collect.get(0).toString());
+        List<Geometry> collect = getConnectedAreas(twoDArray);
+        assertEquals("1", "POLYGON ((0 0, 0 2, 1 2, 0 0))", collect.get(0).toString());
     }
 
 
@@ -60,20 +61,20 @@ public class NoGoFinderTest {
                 {"1", " "},
                 {"1", " "},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
-        assertEquals("1", "Line (0,0),(0,2)", collect.get(0).toString());
+        assertEquals("1", "LINESTRING (0 0, 0 2)", collect.get(0).toString());
     }
     @Test
     public void testLineUp() {
         String [][] twoDArray = {
                 {"1", "1", "1"},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
-        assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
+        assertEquals("1", "LINESTRING (0 0, 2 0)", collect.get(0).toString());
     }
 
 
@@ -82,11 +83,11 @@ public class NoGoFinderTest {
         String [][] twoDArray = {
                 {"1", "1", "1", " ", "1", "1", "1"},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 2, collect.size());
 
-        assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
-        assertEquals("2", "Line (4,0),(6,0)", collect.get(1).toString());
+        assertEquals("1", "LINESTRING (0 0, 2 0)", collect.get(0).toString());
+        assertEquals("2", "LINESTRING (4 0, 6 0)", collect.get(1).toString());
     }
 
 
@@ -96,10 +97,10 @@ public class NoGoFinderTest {
                 {"1", "1"},
                 {"1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
-        assertEquals("1", "Polygon (0,0),(0,1),(1,1),(1,0),(0,0)", collect.get(0).toString());
+        assertEquals("1", "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))", collect.get(0).toString());
     }
 
     @Test
@@ -108,10 +109,10 @@ public class NoGoFinderTest {
                 {"1", "1", " "},
                 {"1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
-        assertEquals("1", "Polygon (0,0),(0,1),(1,1),(2,0),(0,0)", collect.get(0).toString());
+        assertEquals("1", "POLYGON ((0 0, 0 1, 1 1, 2 0, 0 0))", collect.get(0).toString());
     }
 
 
@@ -121,10 +122,10 @@ public class NoGoFinderTest {
                 {" ", "1", "1"},
                 {"1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
-        assertEquals("1", "Polygon (0,0),(1,1),(2,1),(2,0),(0,0)", collect.get(0).toString());
+        assertEquals("1", "POLYGON ((0 0, 1 1, 2 1, 2 0, 0 0))", collect.get(0).toString());
     }
 
     @Test
@@ -134,10 +135,10 @@ public class NoGoFinderTest {
                 {"1", "1", " "},
                 {"1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
-        assertEquals("1", "Polygon (0,0),(0,2),(2,2),(1,1),(2,0),(0,0)", collect.get(0).toString());
+        assertEquals("1", "POLYGON ((0 0, 0 2, 2 2, 1 1, 2 0, 0 0))", collect.get(0).toString());
     }
 
     @Test
@@ -147,9 +148,9 @@ public class NoGoFinderTest {
                 {"1", "1", "1"},
                 {"1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
-        assertEquals("1", "Polygon (0,0),(0,1),(1,2),(2,2),(2,0),(0,0)", collect.get(0).toString());
+        assertEquals("1", "POLYGON ((0 0, 0 1, 1 2, 2 2, 2 0, 0 0))", collect.get(0).toString());
     }
 
 
@@ -160,9 +161,9 @@ public class NoGoFinderTest {
                 {"1", "1", "1"},
                 {"1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
-        assertEquals("1", "Polygon (0,0),(0,2),(1,2),(2,1),(2,0),(0,0)", collect.get(0).toString());
+        assertEquals("1", "POLYGON ((0 0, 0 2, 1 2, 2 1, 2 0, 0 0))", collect.get(0).toString());
     }
 
     @Test
@@ -172,7 +173,7 @@ public class NoGoFinderTest {
                 {"1", " ", "1"},
                 {"1", "1", "1"},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
         assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
@@ -186,7 +187,7 @@ public class NoGoFinderTest {
                 {"1", "1", " ", "1", "1"},
                 {"1", "1", "1", "1", "1"},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
         assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
@@ -199,7 +200,7 @@ public class NoGoFinderTest {
                 {"1", "1", "1"},
                 {"1", " ", "1"},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
         assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
@@ -213,7 +214,7 @@ public class NoGoFinderTest {
                 {"1", "1", " ", "1", "1"},
                 {"1", "1", " ", "1", "1"},
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
         assertEquals("1", "Line (0,0),(2,0)", collect.get(0).toString());
@@ -229,7 +230,7 @@ public class NoGoFinderTest {
                 {"1", " ", "1", "1", "1", "1", "1", "1", "1", "1", "1"},
                 {"1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 2, collect.size());
         assertEquals("1", "Polygon (0,0),(0,2),(1,2),(2,1),(2,0),(0,0)", collect.get(0).toString());
     }
@@ -244,7 +245,7 @@ public class NoGoFinderTest {
                 {"1", "1", " ", "1", "1", " ","1", "1"},
                 {"1", "1", "1", "1", "1", "1","1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
         assertEquals("1", "Polygon (0,0),(0,2),(1,2),(2,1),(2,0),(0,0)", collect.get(0).toString());
     }
@@ -257,11 +258,11 @@ public class NoGoFinderTest {
                 {" ", "1", "1", " ", "1", "1"},
                 {"1", "1", "1", "1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 2, collect.size());
 
-        assertEquals("1", "Polygon (0,0),(1,1),(2,1),(5,0),(0,0)", collect.get(0).toString());
-        assertEquals("2", "Line (4,1),(5,1)", collect.get(1).toString());
+        assertEquals("1", "POLYGON ((0 0, 1 1, 2 1, 5 0, 0 0))", collect.get(0).toString());
+        assertEquals("2", "LINESTRING (4 1, 5 1)", collect.get(1).toString());
 
     }
 
@@ -272,11 +273,11 @@ public class NoGoFinderTest {
                 {" ", "1", "1", " ", "1", "1"},
                 {"1", "1", "1", " ", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 2, collect.size());
 
-        assertEquals("1", "Polygon (0,0),(1,1),(2,1),(2,0),(0,0)", collect.get(0).toString());
-        assertEquals("2", "Polygon (4,0),(4,1),(5,1),(5,0),(4,0)", collect.get(1).toString());
+        assertEquals("1", "POLYGON ((0 0, 1 1, 2 1, 2 0, 0 0))", collect.get(0).toString());
+        assertEquals("2", "POLYGON ((4 0, 4 1, 5 1, 5 0, 4 0))", collect.get(1).toString());
 
     }
 
@@ -291,11 +292,11 @@ public class NoGoFinderTest {
                 {" ", "1", "1", "1"},
                 {"1", "1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 2, collect.size());
 
-        assertEquals("1", "Polygon (0,0),(3,3),(3,0),(0,0)", collect.get(0).toString());
-        assertEquals("2", "Polygon (0,3),(0,5),(2,5),(0,3)", collect.get(1).toString());
+        assertEquals("1", "POLYGON ((0 0, 3 3, 3 0, 0 0))", collect.get(0).toString());
+        assertEquals("2", "POLYGON ((0 3, 0 5, 2 5, 0 3))", collect.get(1).toString());
     }
 
 
@@ -312,9 +313,9 @@ public class NoGoFinderTest {
                 {"1", "1", "1", "1", " ", " ", " ", " "},
                 {"1", "1", "1", " ", " ", " ", " ", " "}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
-        assertEquals("1", "Polygon (0,0),(0,1),(7,8),(7,5),(2,0),(0,0)", collect.get(0).toString());
+        assertEquals("1", "POLYGON ((0 0, 0 1, 7 8, 7 5, 2 0, 0 0))", collect.get(0).toString());
 
     }
 
@@ -331,18 +332,18 @@ public class NoGoFinderTest {
                 {" ", "1", "1"},
                 {"1", "1", "1"}
         };
-        List<Figure> collect = getConnectedAreas(twoDArray);
+        List<Geometry> collect = getConnectedAreas(twoDArray);
         assertEquals("number of areas", 1, collect.size());
 
-        assertEquals("1", "Polygon (0,0),(1,1),(0,2),(1,3),(0,4),(1,5),(0,6),(1,7),(0,8),(2,8),(2,6),(1,5),(2,4),(2,3),(1,2),(2,1),(2,0),(0,0)", collect.get(0).toString());
+        assertEquals("1", "POLYGON ((0 0, 1 1, 0 2, 1 3, 0 4, 1 5, 0 6, 1 7, 0 8, 2 8, 2 6, 1 5, 2 4, 2 3, 1 2, 2 1, 2 0, 0 0))", collect.get(0).toString());
     }
 
-    private List<Figure> getConnectedAreas(String[][] twoDArray) {
+    private List<Geometry> getConnectedAreas(String[][] twoDArray) {
         List<List<String>> grid = Arrays.stream(twoDArray).map(Lists::newArrayList).collect(Collectors.toList());
         Collections.reverse(grid);
         AreaGroupingAlgorithm<String> algo = new LineBasedAreaGroupingAlgorithm<>(grid, s -> s.equals("1"), new DefaultPolygonOptimizer());
         long start = System.nanoTime();
-        List<Figure> collect = algo.getFigures();
+        List<Geometry> collect = algo.getFigures();
         long delta = System.nanoTime() - start;
         log.info("collected polygons {} in {} ms", collect.size(), TimeUnit.NANOSECONDS.toMillis(delta));
         return collect;

@@ -14,6 +14,8 @@
  */
 package dk.dma;
 
+import com.vividsolutions.jts.geom.Geometry;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +32,7 @@ public class Asserts {
             if (message != null) {
                 str = message + ", " + str;
             }
-            fail(str + " Does not contain: " + contains);
+            fail(str + " Does not contain: " + contains + ". the sting is: '" + str + "'");
         }
     }
 
@@ -53,4 +55,11 @@ public class Asserts {
             fail(message + " " + element + " not contained in " + list.stream().map(String::valueOf).collect(Collectors.joining(",")));
         }
     }
+
+    public static void geometryEquals(String message, Geometry expected, Geometry actual) {
+        if (!expected.equalsNorm(actual)) {
+            fail(message + String.format("%nExpected %s%nActual %s", expected, actual));
+        }
+    }
+
 }

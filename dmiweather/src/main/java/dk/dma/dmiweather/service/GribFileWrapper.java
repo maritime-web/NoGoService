@@ -16,7 +16,6 @@ package dk.dma.dmiweather.service;
 
 import com.google.common.collect.ImmutableMap;
 import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import dk.dma.dmiweather.dto.GridParameterType;
 import dk.dma.dmiweather.grib.*;
 import lombok.Getter;
@@ -97,7 +96,7 @@ public class GribFileWrapper {
         coordinates[3] = new Coordinate(found.getLo1(), found.getLa2());
         coordinates[4] = new Coordinate(found.getLo1(), found.getLa1());
 
-        polygon = new Polygon(new LinearRing(new CoordinateArraySequence(coordinates), factory), new LinearRing[]{}, factory);
+        polygon = factory.createPolygon(coordinates);
     }
 
     Set<GridParameterType> getParameterTypes() {

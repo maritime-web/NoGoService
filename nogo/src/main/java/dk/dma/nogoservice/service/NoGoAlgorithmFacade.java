@@ -14,8 +14,9 @@
  */
 package dk.dma.nogoservice.service;
 
+import com.vividsolutions.jts.geom.Geometry;
 import dk.dma.nogoservice.algo.*;
-import dk.dma.nogoservice.dto.NoGoPolygon;
+import dk.dma.nogoservice.dto.GridData;
 import dk.dma.nogoservice.entity.GeoCoordinateProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,21 +39,21 @@ public class NoGoAlgorithmFacade {
         this.figureTransformer = figureTransformer;
     }
 
-    public <Value extends GeoCoordinateProvider> List<NoGoPolygon> getNoGo(List<List<Value>> grid, NoGoMatcher<Value> matcher) {
+    <Value extends GeoCoordinateProvider> List<Geometry> getNoGo(List<List<Value>> grid, NoGoMatcher<Value> matcher, GridData gridData) {
 
-        return vectorGrouping(grid, matcher);
-        //return lineGrouping(grid, matcher);
+        return vectorGrouping(grid, matcher, gridData);
+        //return lineGrouping(grid, matcher, gridData);
     }
 
-    private <Value extends GeoCoordinateProvider> List<NoGoPolygon> vectorGrouping(List<List<Value>> grid, NoGoMatcher<Value> matcher) {
+    private <Value extends GeoCoordinateProvider> List<Geometry> vectorGrouping(List<List<Value>> grid, NoGoMatcher<Value> matcher, GridData gridData) {
         AreaGroupingAlgorithm<Value> algo = new VectorGraphicAreaGroupingAlgorithm<>(grid, matcher);
-        List<Figure> figures = algo.getFigures();
-        return figureTransformer.convertToGeoLocations(grid, figures);
+        List<Geometry> figures = algo.getFigures();
+        return figureTransformer.convertToGeoLocations(grid, figures, gridData);
     }
 
-    private <Value extends GeoCoordinateProvider> List<NoGoPolygon> lineGrouping(List<List<Value>> grid, NoGoMatcher<Value> matcher) {
+    private <Value extends GeoCoordinateProvider> List<Geometry> lineGrouping(List<List<Value>> grid, NoGoMatcher<Value> matcher, GridData gridData) {
         AreaGroupingAlgorithm<Value> algo = new LineBasedAreaGroupingAlgorithm<>(grid, matcher, new DefaultPolygonOptimizer());
-        List<Figure> figures = algo.getFigures();
-        return figureTransformer.convertToGeoLocations(grid, figures);
+        List<Geometry> figures = algo.getFigures();
+        return figureTransformer.convertToGeoLocations(grid, figures, gridData);
     }
 }

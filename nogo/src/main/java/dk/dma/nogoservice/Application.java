@@ -15,6 +15,7 @@
 package dk.dma.nogoservice;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.Lists;
 import dk.dma.nogoservice.service.*;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -36,6 +37,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
+ *  Application entry point, and main spring configuration.
+ *
  * @author Klaus Groenbaek
  *         Created 10/03/17.
  */
@@ -44,7 +47,12 @@ import java.util.concurrent.Executors;
 public class Application extends WebMvcConfigurerAdapter {
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder(Application.class).profiles(ApiProfiles.PRODUCTION).run(args);
+        SpringApplicationBuilder builder = new SpringApplicationBuilder(Application.class);
+        ArrayList<String> profiles = Lists.newArrayList(ApiProfiles.PRODUCTION, ApiProfiles.SECURITY);
+        if (Boolean.getBoolean("disableSecurity")) {
+            profiles.remove(ApiProfiles.SECURITY);
+        }
+        builder.profiles(profiles.toArray(new String[profiles.size()])).headless(false).run(args);
     }
 
     @Override
@@ -70,8 +78,12 @@ public class Application extends WebMvcConfigurerAdapter {
      */
     @Bean
     @Profile(ApiProfiles.PRODUCTION)
-    public List<QueryArea> fromS3(WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm, S3DataLoader dataLoader) throws IOException {
-        List<QueryArea> beans = new ArrayList<>();
+    public List<GridDataQueryArea> fromS3(WeatherService weatherService, NoGoAlgorithmFacade noGoAlgorithm, S3DataLoader dataLoader) throws IOException {
+        List<GridDataQueryArea> beans = new ArrayList<>();
+
+//        FileBackedQueryArea area = new FileBackedQueryArea(new File("/Users/kg/work/NoGoService/Flintrannan_50_depth.json"), weatherService, noGoAlgorithm);
+//        beans.add(area);
+
         List<String> files = dataLoader.getFiles();
         for (String file : files) {
             beans.add(new S3FileBackedQueryArea(dataLoader, file, weatherService, noGoAlgorithm));

@@ -16,7 +16,6 @@ package dk.dma.dmiweather.service;
 
 import com.google.common.collect.*;
 import com.vividsolutions.jts.geom.*;
-import com.vividsolutions.jts.geom.impl.CoordinateArraySequence;
 import dk.dma.common.dto.GeoCoordinate;
 import dk.dma.common.dto.JSonWarning;
 import dk.dma.common.exception.APIException;
@@ -223,7 +222,7 @@ class ForecastContainer {
         coordinates[3] = new Coordinate(northWest.getLon(), northWest.getLat());
         coordinates[4] = new Coordinate(northWest.getLon(), southEast.getLat());
 
-        return new Polygon(new LinearRing(new CoordinateArraySequence(coordinates), factory), new LinearRing[0], factory);
+        return factory.createPolygon(coordinates);
     }
 
     @Synchronized

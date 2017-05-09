@@ -45,7 +45,7 @@ import static org.junit.Assert.assertEquals;
  *         Created 12/03/17.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ActiveProfiles(ApiProfiles.TEST)
+@ActiveProfiles({ApiProfiles.TEST, ApiProfiles.SECURITY})
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class NoGoServiceTest {
 

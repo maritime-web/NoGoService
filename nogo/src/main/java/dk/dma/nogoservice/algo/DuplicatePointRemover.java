@@ -14,35 +14,29 @@
  */
 package dk.dma.nogoservice.algo;
 
-import com.google.common.collect.Lists;
-import com.vividsolutions.jts.geom.Geometry;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-
+import java.util.Iterator;
 import java.util.List;
 
 /**
- * A figure is a list of points.
  * @author Klaus Groenbaek
- *         Created 15/03/17.
+ *         Created 05/05/17.
  */
-@AllArgsConstructor
-@EqualsAndHashCode
-public abstract class Figure {
-    private final List<Point> points;
+final class DuplicatePointRemover {
 
-    Figure(Point... points) {
-        this(Lists.newArrayList(points));
+
+    static void removeSequentialDuplicates(List<Point> points) {
+
+        // there are some cases where we get the same point twice in a row, these have to be removed
+        Iterator<Point> iterator = points.listIterator();
+        if (iterator.hasNext()) {
+            Point point = iterator.next();
+            while( iterator.hasNext()) {
+                Point next = iterator.next();
+                if (point.equals(next)) {
+                    iterator.remove();
+                }
+                point = next;
+            }
+        }
     }
-
-    @Override
-    public String toString() {
-        throw new IllegalStateException("Sub classes must override to string, for debugging purposes.");
-    }
-
-    public List<Point> getPoints() {
-        return points;
-    }
-
-    public abstract Geometry toGeomerty();
 }

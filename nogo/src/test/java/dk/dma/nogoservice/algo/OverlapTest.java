@@ -14,35 +14,21 @@
  */
 package dk.dma.nogoservice.algo;
 
-import com.google.common.collect.Lists;
-import com.vividsolutions.jts.geom.Geometry;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-
-import java.util.List;
-
 /**
- * A figure is a list of points.
+ *
+ * When two nogo areas overlap, we need to find a way to handle the overlapping area. This is especially important because other countries are always treated
+ * as NoGo, so we have to look at the nogo calculation for the overlapping area to be sure
  * @author Klaus Groenbaek
- *         Created 15/03/17.
+ *         Created 04/05/17.
  */
-@AllArgsConstructor
-@EqualsAndHashCode
-public abstract class Figure {
-    private final List<Point> points;
+public class OverlapTest {
 
-    Figure(Point... points) {
-        this(Lists.newArrayList(points));
+    public void simpleOverlap() {
+
+
+
+
+
     }
 
-    @Override
-    public String toString() {
-        throw new IllegalStateException("Sub classes must override to string, for debugging purposes.");
-    }
-
-    public List<Point> getPoints() {
-        return points;
-    }
-
-    public abstract Geometry toGeomerty();
 }
