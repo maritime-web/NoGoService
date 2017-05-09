@@ -53,7 +53,6 @@ public class FTPLoader {
 
     private final String tempDirLocation;
     private final List<ForecastConfiguration> configurations;
-    private File lastTempDir;
     private String hostname = "ftp.dmi.dk";
     private Map<ForecastConfiguration, String> newestDirectories = new HashMap<>();
 
@@ -86,8 +85,8 @@ public class FTPLoader {
                                 log.error("Did not get reply 250 as expected, got {} ", client.getReplyCode());
                             }
                             String workingDirectory = new File(client.printWorkingDirectory()).getName();
-                            String newest = newestDirectories.get(configuration);
-                            if (!workingDirectory.equals(newest)) {
+                            String previousNewest = newestDirectories.get(configuration);
+                            if (!workingDirectory.equals(previousNewest)) {
                                 // a new directory for this configuration is available on the server
                                 FTPFile[] listFiles = client.listFiles();
                                 List<FTPFile> files = Arrays.stream(listFiles).filter(f -> configuration.getFilePattern().matcher(f.getName()).matches()).collect(Collectors.toList());
@@ -97,13 +96,13 @@ public class FTPLoader {
 
 
                                     gridWeatherService.newFiles(localFiles, configuration);
-                                    File newTempDir = localFiles.keySet().iterator().next().getParentFile();
-                                    if (lastTempDir != null && newTempDir.equals(lastTempDir)) {
-                                        deleteRecursively(lastTempDir);
-                                        lastTempDir = newTempDir;
-                                    }
                                 } catch (IOException e) {
                                     log.warn("Unable to get new weather files from DMI", e);
+                                }
+
+                                if (previousNewest != null) {
+                                    File previous = new File(tempDirLocation, previousNewest);
+                                    deleteRecursively(previous);
                                 }
                                 newestDirectories.put(configuration, workingDirectory);
                             }
@@ -135,6 +134,7 @@ public class FTPLoader {
                 log.info("Failed to disconnect", e);
             }
         }
+        log.info("Check completed.");
     }
 
     /**
