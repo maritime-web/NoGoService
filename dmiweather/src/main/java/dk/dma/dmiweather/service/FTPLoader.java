@@ -29,6 +29,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -54,7 +55,8 @@ public class FTPLoader {
     private final String tempDirLocation;
     private final List<ForecastConfiguration> configurations;
     private String hostname = "ftp.dmi.dk";
-    private Map<ForecastConfiguration, String> newestDirectories = new HashMap<>();
+
+    private Map<ForecastConfiguration, String> newestDirectories = new ConcurrentHashMap<>();
 
     @Autowired
     public FTPLoader(WeatherService gridWeatherService, @Value("${ftploader.tempdir:#{null}}") String tempDirLocation, List<ForecastConfiguration> configurations) {
@@ -93,8 +95,6 @@ public class FTPLoader {
 
                                 try {
                                     Map<File, Instant> localFiles = transferFilesIfNeeded(client, workingDirectory, files);
-
-
                                     gridWeatherService.newFiles(localFiles, configuration);
                                 } catch (IOException e) {
                                     log.warn("Unable to get new weather files from DMI", e);
@@ -145,7 +145,7 @@ public class FTPLoader {
     private Map<File, Instant> transferFilesIfNeeded(FTPClient client, String directoryName, List<FTPFile> files) throws IOException {
 
         File current = new File(tempDirLocation, directoryName);
-        if (lastTempDir == null) {
+        if (newestDirectories.isEmpty()) {
             // If we just started check if there is data from an earlier run and delete it
             File temp = new File(tempDirLocation);
             if (temp.exists()) {
