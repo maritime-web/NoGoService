@@ -20,9 +20,7 @@ import dk.dma.nogoservice.entity.GeoCoordinateProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * Transforms figures with x,y grid coordinates into geoLocations by extracting lon, lat from the values in the grid
@@ -40,30 +38,38 @@ public class FigureTransformer {
         double halfLatSpacing = gridData.getDy() / 2;
         double halfLongSpacing = gridData.getDx() / 2;
         double buffer = (halfLatSpacing + halfLongSpacing) / 2;
-        GeometryFactory factory = new GeometryFactory();
+        GeometryFactory factory = new GeometryFactory(new PrecisionModel(100000));
         // convert from x,y grid to long/lat, and add buffering
-        List<Geometry> collect = figures.stream().map(geometry -> {
-            // Although coordinate is not immutable, modifying it directly give strangeResults
-            Geometry result;
+        List<Geometry> collect = new ArrayList<>();
+        for (Geometry geometry : figures) {
             if (geometry instanceof Polygon) {
                 Polygon polygon = (Polygon) geometry;
                 // since this is used with nogo areas we know there are no holes
                 Coordinate[] exteriorRing = convertCoordinates(grid, polygon.getExteriorRing().getCoordinates());
-                result = factory.createPolygon(exteriorRing);
+                polygon = (Polygon) factory.createPolygon(exteriorRing).buffer(buffer, 2);
+                // when a polygon is buffered, it may become self overlapping introducing holes, in thos cases we have to create a new polygon whitout the holes.
+                if (polygon.getNumInteriorRing() != 0) {
+                    collect.add(factory.createPolygon(polygon.getExteriorRing().getCoordinates()));
+                } else {
+                    collect.add(polygon);
+                }
             } else if (geometry instanceof LineString) {
                 LineString lineString = (LineString) geometry;
-                result = factory.createLineString(convertCoordinates(grid, lineString.getCoordinates()));
+                collect.add(factory.createLineString(convertCoordinates(grid, lineString.getCoordinates())).buffer(buffer, 2));
             } else if (geometry instanceof Point) {
                 Point point = (Point) geometry;
-                result = factory.createLineString(convertCoordinates(grid, point.getCoordinates()));
+                collect.add(factory.createLineString(convertCoordinates(grid, point.getCoordinates())).buffer(buffer, 2));
             } else {
                 throw new IllegalArgumentException("Unsupported Geometry " + geometry.getClass());
             }
+        }
 
-            return result.buffer(buffer, 2);
-        }).collect(Collectors.toList());
         return collect;
     }
+
+    /**
+     * Although coordinate is not immutable, modifying it directly give strangeResults, so we need to copy the coordinate array
+     */
 
     private <Value extends GeoCoordinateProvider> Coordinate[] convertCoordinates(List<List<Value>> grid, Coordinate[] coordinates) {
         return Arrays.stream(coordinates)
@@ -72,3 +78,4 @@ public class FigureTransformer {
     }
 
 }
+
