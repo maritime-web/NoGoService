@@ -10,10 +10,10 @@ pipeline {
             steps {
                 sh './gradlew clean build'
             }
-        }
-        post {
-            success {
-                archiveArtifacts(artifacts: '**/build/libs/*.war', allowEmptyArchive: true)
+            post {
+                success {
+                    archiveArtifacts(artifacts: '**/build/libs/*.war', allowEmptyArchive: true)
+                }
             }
         }
     }
